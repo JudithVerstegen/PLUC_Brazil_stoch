@@ -1,0 +1,12 @@
+-0 landuse
+1	urban
+2	water
+3	natural forest
+4	rangeland
+5 	planted forest
+6	crops
+7	grass and shrubs
+8	sugar cane
+9	pasture (planted)
+10	bare soil
+11	abandoned
