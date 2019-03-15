@@ -20,6 +20,12 @@ def getLandUseDict():
   landUseDict = {8: 'sc', 6: 'cr', 5: 'pf', 9: 'pp', 4: 'ra'}
   return landUseDict
 
+def getNrSamplesFromFile(filename):
+  """Return the total number of samples, summed over the input column."""
+  path = os.path.join('inputsFromCalibration',filename)
+  data = np.genfromtxt(path, dtype=int, delimiter='\t', names=True)
+  return data.shape[0]
+
 def getSampleInput(sampleNr, filename, landUseList = None):
 
   if landUseList is not None:
@@ -58,3 +64,4 @@ def getInitialLandUseMap(sampleNr):
     
 # test
 ##getInitialLandUseMap(1)
+##print(getNrSamplesFromFile('particle_mapping.csv'))

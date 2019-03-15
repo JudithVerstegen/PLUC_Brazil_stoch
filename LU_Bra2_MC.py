@@ -678,7 +678,9 @@ class LandUseChangeModel(DynamicModel, MonteCarloModel,\
     self.landUse.determineDistanceToRoads(self.roads)
     self.landUse.determineSpeedRoads(self.roadsNom)
     self.landUse.calculateStaticSuitabilityMaps(self.growthPeriod)
-
+          
+    # Draw random numbers between zero and one
+    # To determine demand, not used when run deterministically
     self.demandStoch = 0.5
 
 
@@ -760,7 +762,8 @@ class LandUseChangeModel(DynamicModel, MonteCarloModel,\
 
     
 nrOfTimeSteps = Parameters.getNrTimesteps()
-nrOfSamples = Parameters.getNrSamples()
+##nrOfSamples = Parameters.getNrSamples()
+nrOfSamples = ParametersProjection.getNrSamplesFromFile('particle_mapping.csv')
 myModel = LandUseChangeModel()
 dynamicModel = DynamicFramework(myModel,nrOfTimeSteps)
 mcModel = MonteCarloFramework(dynamicModel, nrOfSamples)
