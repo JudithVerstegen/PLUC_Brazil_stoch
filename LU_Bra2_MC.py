@@ -6,6 +6,7 @@ Judith Verstegen, 2014-1-17
 from pcraster import *
 from pcraster.framework import *
 import Parameters
+import ParametersProjection
 import initialMap
 import pickle
 import shutil
@@ -233,10 +234,10 @@ class LandUseType:
         ## Dynamic factors are captured in the total suitability map
         pass
       else:
-        print 'ERROR: unknown suitability factor for landuse', self.typeNr
+        print('ERROR: unknown suitability factor for landuse', self.typeNr)
       i += 1
-    print 'weight of initial factors of', self.typeNr, \
-          'is', self.weightInitialSuitabilityMap
+    print('weight of initial factors of', self.typeNr, \
+          'is', self.weightInitialSuitabilityMap)
     self.initialSuitabilityMap += self.noise
 ##    report(self.initialSuitabilityMap, 'iniSuit' + str(self.typeNr))
 
@@ -275,7 +276,7 @@ class LandUseType:
         # Static factors already captured in the initial suitability map
         pass
       else:
-        print 'ERROR: unknown suitability factor for landuse', self.typeNr
+        print('ERROR: unknown suitability factor for landuse', self.typeNr)
       i += 1
     suitabilityMap += self.weightInitialSuitabilityMap * \
                       self.initialSuitabilityMap
@@ -305,26 +306,26 @@ class LandUseType:
     self.demand = float(mapmaximum(ownDemand))
     if self.demand < 0:
       self.demand = 0.0
-    print '\nland use type', self.typeNr
-    print 'demand is:', self.demand
+    print('\nland use type', self.typeNr)
+    print('demand is:', self.demand)
     if self.forest:
-      print 'forest,', self.typeNr,'so remove'
+      print('forest,', self.typeNr,'so remove')
       self.removeForest()
     else:
-      print 'total yield is:', self.totalYield
+      print('total yield is:', self.totalYield)
       if ((self.totalYield > self.demand) and \
          ((self.totalYield + self.maxYield) < self.demand)) or \
          ((self.totalYield < self.demand) and \
          ((self.totalYield + self.maxYield) > self.demand)):
-        print 'do nothing'
+        print('do nothing')
       elif self.totalYield > self.demand:
-        print 'remove'
+        print('remove')
         self.remove()
       elif self.totalYield < self.demand:
-        print 'add'
+        print('add')
         self.add(immutables)
       else:
-        print 'problem'
+        print('problem')
     newImmutables = ifthenelse(self.environment == self.typeNr, boolean(1),\
                                immutables)
     return self.environment, newImmutables
@@ -339,7 +340,7 @@ class LandUseType:
                                       totalSuitabilityMap)
     ## Determine maximum suitability and allocate new cells there
     mapMax = mapmaximum(totalSuitabilityMap)
-    print 'start mapMax =', float(mapMax)
+    print('start mapMax =', float(mapMax))
     ordered = order(totalSuitabilityMap)
     maxIndex = int(mapmaximum(ordered))
     diff = float(self.demand - self.totalYield)
@@ -348,9 +349,9 @@ class LandUseType:
     i = 0
     tempEnv = self.environment
     while diff > 0 and xPrev > x:
-      print 'cells to add', int(maxIndex - x)
+      print('cells to add', int(maxIndex - x))
       if x < 0:
-        print 'No space left for land use', self.typeNr
+        print('No space left for land use', self.typeNr)
         break
       else:
         ## The key: cells with maximum suitability are turned into THIS type
@@ -365,7 +366,7 @@ class LandUseType:
         diff = float(self.demand - self.totalYield)
         x -= int(diff / self.maxYield)
     self.setEnvironment(tempEnv)
-    print 'iterations', i, 'end yield is', self.totalYield
+    print('iterations', i, 'end yield is', self.totalYield)
 
 
   def remove(self):
@@ -375,7 +376,7 @@ class LandUseType:
                                       self.totalSuitabilityMap)
     ordered = order(totalSuitabilityMap)
     mapMin = mapminimum(totalSuitabilityMap)
-    print 'start mapMin =', float(mapMin)
+    print('start mapMin =', float(mapMin))
     diff = float(self.totalYield - self.demand)
     # changed maxYield * 0.8 to maxYield, because yield is always 1
     x = int(diff / (self.maxYield * 0.8))
@@ -383,7 +384,7 @@ class LandUseType:
     i = 0
     tempEnv = self.environment
     while diff > 0 and xPrev < x and i < 100:
-      print 'cells to remove', x
+      print('cells to remove', x)
       ## The key: cells with minimum suitability are turned into 'abandoned'
       tempEnvironment = ifthen(ordered < x, nominal(11))
       tempEnv = cover(tempEnvironment, self.environment)
@@ -394,20 +395,20 @@ class LandUseType:
       xPrev = x
       diff = float(self.totalYield - self.demand)
       if math.fmod(i, 40) == 0:
-        print 'NOT getting there...'
+        print('NOT getting there...')
         ## Number of cells to be allocated
         x = 2 * (x + int(diff / self.maxYield))      
       else:
         ## Number of cells to be allocated
         x += int(diff / self.maxYield)
     self.setEnvironment(tempEnv)
-    print 'iterations', i, 'end yield is', self.totalYield
+    print('iterations', i, 'end yield is', self.totalYield)
 ##    report(self.environment, 'newEnv' + str(self.typeNr))
 
   def removeForest(self):
     """Remove area of forest indicated in time series."""
     if self.demand < 0.01:
-      print 'nothing to remove'
+      print('nothing to remove')
     else:
       ## Only cells already occupied by this land use can be removed
       self.totalSuitabilityMap = ifthen(self.environment == self.typeNr, \
@@ -417,12 +418,12 @@ class LandUseType:
       removedBiomass = self.nullMask
       diff = 1
       tempEnv = self.environment
-      print 'start mapMin =', float(mapMin)
+      print('start mapMin =', float(mapMin))
       x = int(self.demand / self.maxYield * 0.8)
       xPrev = 0
       i = 0
       while diff > 0 and xPrev < x and i < 100:
-        print 'cells to remove', x
+        print('cells to remove', x)
         ## The key: cells with minimum suitability are turned into 'abandoned'
         tempEnvironment = ifthen(ordered < x, nominal(98))
         tempEnv = cover(tempEnvironment, self.environment)
@@ -433,14 +434,14 @@ class LandUseType:
         xPrev = x
         diff = float(self.demand - self.totalYield)
         if math.fmod(i, 40) == 0:
-          print 'NOT getting there...'
+          print('NOT getting there...')
           ## Number of cells to be allocated
           x = 2 * (x + int(diff / self.maxYield))      
         else:
           ## Number of cells to be allocated
           x += int(diff / self.maxYield)
       self.setEnvironment(tempEnv)
-      print 'iterations', i, 'removed biomass is', self.totalYield
+      print('iterations', i, 'removed biomass is', self.totalYield)
 
 #######################################
 
@@ -449,7 +450,7 @@ class LandUse:
     """Construct a land use object with a nr of types and an environment."""
     self.types = types
     self.nrOfTypes = len(types)
-    print '\nnr of dynamic land use types is:', self.nrOfTypes
+    print('\nnr of dynamic land use types is:', self.nrOfTypes)
     self.environment = environment
     ## Map with 0 in study area and No Data outside, used for cover() functions
     self.nullMask = nullMask
@@ -569,7 +570,7 @@ class LandUse:
     """Allocate as much of a land use type as indicated in the demand tss."""
     self.formerEnvironment = self.environment
     for aRegion in self.macroRegionList:
-      print '\nREGION', aRegion
+      print('\nREGION', aRegion)
       region = self.macroRegions == aRegion
       immutables = ifthen(region, self.excluded)
       tempEnvironment = ifthen(region, self.environment)
@@ -628,10 +629,10 @@ class LandUseChangeModel(DynamicModel, MonteCarloModel,\
 
     # Input values from Parameters file
     # 1. List of landuse types in order of 'who gets to choose first'
-    self.landUseList = Parameters.getLandUseList()
+    ##self.landUseList = Parameters.getLandUseList()
     self.relatedTypeDict = Parameters.getRelatedTypeDict()
     self.suitFactorDict = Parameters.getSuitFactorDict()
-    self.weightDict = Parameters.getWeightDict()
+    ##self.weightDict = Parameters.getWeightDict()
     self.variableSuperDictionary = Parameters.getVariableSuperDict()
     self.noGoLanduseList = Parameters.getNoGoLanduseTypes()
     self.privateNoGoSlopeDict = Parameters.getPrivateNoGoSlopeDict()
@@ -644,10 +645,23 @@ class LandUseChangeModel(DynamicModel, MonteCarloModel,\
 
 
   def initial(self):
-    # Land use map from calibration period
+    print('-----------------------\n\n')
+    # Fixate random seed so that scenario and counterfactual have same
+    # demandStoch
+    setrandomseed(self.currentSampleNumber()+28)
+
+    # FROM CALIBRATION PERIOD!
+    self.landUseList = ParametersProjection.getSampleInput(\
+      self.currentSampleNumber(), 'LUTypes')
+    self.weightDict = ParametersProjection.getSampleInput(\
+      self.currentSampleNumber(), 'weights', self.landUseList)
+    print(self.weightDict)
+
+    
+    # Land use map from calibration period (only one, no uncertainty)
     fileName = os.path.join('projIniMaps','ini1')
     self.environment = readmap(fileName)
-    self.report(self.environment, 'initLanduse')
+    ##self.report(self.environment, 'initLanduse')
     self.landUse = LandUse(self.landUseList, self.environment, self.nullMask,\
                            self.macroRegions, self.regions)
 
@@ -664,16 +678,13 @@ class LandUseChangeModel(DynamicModel, MonteCarloModel,\
     self.landUse.determineDistanceToRoads(self.roads)
     self.landUse.determineSpeedRoads(self.roadsNom)
     self.landUse.calculateStaticSuitabilityMaps(self.growthPeriod)
-          
-    # Draw random numbers between zero and one
-    # To determine demand, not used when run deterministically
-    self.demandStoch = mapuniform()
-    print 'FRACTION DEMAND IS',round(float(self.demandStoch),2),'\n'
+
+    self.demandStoch = 0.5
 
 
   def dynamic(self):
     timeStep = self.currentTimeStep()
-    print '\ntime step', timeStep
+    print('\ntime step', timeStep)
 
     # start where the calibration has stopped
     # but also save the map of the last time step before calibration
@@ -723,28 +734,28 @@ class LandUseChangeModel(DynamicModel, MonteCarloModel,\
 
     
   def postmcloop(self):
-    print '\nrunning postmcloop...'
+    print('\nrunning postmcloop...')
     if int(self.nrSamples()) > 1:
       # Stochastic variables for which mean, var and percentiles are needed
-      print '...calculating statistics...'
+      print('...calculating statistics...')
       sampleNumbers = self.sampleNumbers()
       timeSteps = range(1, nrOfTimeSteps + 1)
       variables = []
 
-      print '...calculating average land use fractions'
+      print('...calculating average land use fractions')
       command = "python LUaverage.py"
       os.system(command)
       
-      print '...copying land use 2030 maps'
+      print('...copying land use 2030 maps')
       command = "python copy2030maps.py"
       os.system(command)
       
-      for aScript in ['LU_Bra2_MC', 'Parameters']:
+      for aScript in ['LU_Bra2_MC', 'Parameters', 'ParametersProjection']:
         src = str(aScript + '.py')
         dst = os.path.join("results", aScript + '.py')
         shutil.copy2(src, dst)
 
-    print '\n...done'
+    print('\n...done')
 
 
     
