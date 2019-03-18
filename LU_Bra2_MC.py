@@ -1,5 +1,5 @@
-"""Land use change model of Mozambique
-Judith Verstegen, 2014-1-17
+"""Land use change model of Brazil
+Judith Verstegen, 2019-03-18
 
 """
 
@@ -7,7 +7,6 @@ from pcraster import *
 from pcraster.framework import *
 import Parameters
 import ParametersProjection
-import initialMap
 import pickle
 import shutil
 import math
@@ -613,6 +612,9 @@ class LandUseChangeModel(DynamicModel, MonteCarloModel,\
     setclone('landuse')
 
   def premcloop(self):
+    # mapping of current MC sample to calibration particle
+    self.mapping = ParametersProjection.getMappingFromFile('particle_mapping.csv',\
+                                                        'New_ID', 'ID_MC5000_2012')
     # Load or construct all input maps
     self.initialEnvironment = self.readmap('landuse')
     self.nullMask = self.readmap('nullMask')
@@ -625,7 +627,8 @@ class LandUseChangeModel(DynamicModel, MonteCarloModel,\
     self.macroRegions = self.readmap('macro')
     self.noGoMap = cover(noGoMap, boolean(self.nullMask))
     self.growthPeriod = cover(self.readmap('growthPeriod'), self.nullMask)
-    self.scenario = Parameters.getScenario()
+    self.scenario = ParametersProjection.getScenario()
+    print('Scenario is', self.scenario)
 
     # Input values from Parameters file
     # 1. List of landuse types in order of 'who gets to choose first'
@@ -635,6 +638,10 @@ class LandUseChangeModel(DynamicModel, MonteCarloModel,\
     ##self.weightDict = Parameters.getWeightDict()
     self.variableSuperDictionary = Parameters.getVariableSuperDict()
     self.noGoLanduseList = Parameters.getNoGoLanduseTypes()
+    # NEW: SCENARIOS >12 DO NOT ALLOW DEFORESTATION
+    if self.scenario > 12:
+      forest_nr = Parameters.getForestNr()
+      self.noGoLanduseList.append(forest_nr)
     self.privateNoGoSlopeDict = Parameters.getPrivateNoGoSlopeDict()
 
     # Time step from which the projection starts (before is calibration)
@@ -651,11 +658,13 @@ class LandUseChangeModel(DynamicModel, MonteCarloModel,\
     setrandomseed(self.currentSampleNumber()+28)
 
     # FROM CALIBRATION PERIOD!
+    calibration_sample_nr = self.mapping.get(self.currentSampleNumber())
+    print(calibration_sample_nr)
     self.landUseList = ParametersProjection.getSampleInput(\
-      self.currentSampleNumber(), 'LUTypes')
+      calibration_sample_nr, 'LUTypes')
     self.weightDict = ParametersProjection.getSampleInput(\
-      self.currentSampleNumber(), 'weights', self.landUseList)
-    print(self.weightDict)
+      calibration_sample_nr, 'weights', self.landUseList)
+    ##print(self.weightDict)
 
     
     # Land use map from calibration period (only one, no uncertainty)
@@ -706,21 +715,10 @@ class LandUseChangeModel(DynamicModel, MonteCarloModel,\
       maxYield = spatial(scalar(1))
 
       # demand per macro region!
-      # from file with average, in case of deterministic run
-      if int(self.nrSamples()) == 1:
-        fileName = 'demand_projection' + str(self.scenario) + '.txt'
-        demand = lookupscalar(fileName, timeStep, self.macroRegions,\
-                              self.environment)
-      # and from some trend between upper and lower in case of stochastic
-      else:
-        fileNameUp = 'demand_projection' + str(self.scenario) + 'b.txt'
-        fileNameLow = 'demand_projection' + str(self.scenario) + 'a.txt'
-        demandUp = lookupscalar(fileNameUp, timeStep, self.macroRegions,\
-                                self.environment)
-        demandLow = lookupscalar(fileNameLow, timeStep, self.macroRegions,\
-                                self.environment)
-        demandDiff = demandUp - demandLow
-        demand = demandDiff * self.demandStoch + demandLow
+      # from file with MAGNET results
+      fileName = 'demand_projection' + str(self.scenario) + '.txt'
+      demand = lookupscalar(fileName, timeStep, self.macroRegions,\
+                            self.environment)
 
       # Suibility maps are calculated
       self.landUse.calculateSuitabilityMaps(mills)
@@ -730,9 +728,11 @@ class LandUseChangeModel(DynamicModel, MonteCarloModel,\
       self.landUse.growForest()
       self.environment = self.landUse.getEnvironment()
 
-      self.report(self.environment, 'landUse')
-      os.system('legend --clone landuse.map -f \"legendLU.txt\" %s ' \
-                %generateNameST('landUse', self.currentSampleNumber(),timeStep))
+      # Only save 2020 and 2030 to disk
+      if timeStep in [15,25]:
+        self.report(self.environment, 'landUse')
+        os.system('legend --clone landuse.map -f \"legendLU.txt\" %s ' \
+                  %generateNameST('landUse', self.currentSampleNumber(),timeStep))
 
     
   def postmcloop(self):
@@ -744,14 +744,17 @@ class LandUseChangeModel(DynamicModel, MonteCarloModel,\
       timeSteps = range(1, nrOfTimeSteps + 1)
       variables = []
 
+      # Probability per cell of having a certain land use type
       print('...calculating average land use fractions')
       command = "python LUaverage.py"
       os.system(command)
-      
+
+      # Copy all 2030 maps to the result folder for further processing
       print('...copying land use 2030 maps')
       command = "python copy2030maps.py"
       os.system(command)
-      
+
+      # Also copy the input scripts, to remember the settings of this run
       for aScript in ['LU_Bra2_MC', 'Parameters', 'ParametersProjection']:
         src = str(aScript + '.py')
         dst = os.path.join("results", aScript + '.py')
@@ -762,7 +765,6 @@ class LandUseChangeModel(DynamicModel, MonteCarloModel,\
 
     
 nrOfTimeSteps = Parameters.getNrTimesteps()
-##nrOfSamples = Parameters.getNrSamples()
 nrOfSamples = ParametersProjection.getNrSamplesFromFile('particle_mapping.csv')
 myModel = LandUseChangeModel()
 dynamicModel = DynamicFramework(myModel,nrOfTimeSteps)

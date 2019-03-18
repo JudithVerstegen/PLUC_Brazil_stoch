@@ -19,20 +19,6 @@ def getFirstTimeStep():
   firstTimeStep = 8
   return firstTimeStep
 
-def getNrSamples():
-  """Return nr of Monte Carlo samples required.
-
-  If Monte Carlo isn't required fill in 1; no statistics will be calculated."""
-
-  samples = 2
-  return samples
-
-def getScenario():
-  """Return the scenario number for reading the demand file."""
-  
-  scenario = 3
-  return scenario
-
 def getConversionUnit():
   """Return conversion unit for max yield unit to square meters.
 

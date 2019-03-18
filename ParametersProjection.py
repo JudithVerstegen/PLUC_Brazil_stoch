@@ -8,7 +8,7 @@ from pcraster import *
 setclone('landuse')
 
 def getScenario():
-  scenario = 3
+  scenario = 15
   return scenario
 
 def getFirstTimeStep():
@@ -21,10 +21,23 @@ def getLandUseDict():
   return landUseDict
 
 def getNrSamplesFromFile(filename):
-  """Return the total number of samples, summed over the input column."""
+  """Return number of samples to run."""
+  # read from csv file that is result of particle filter
   path = os.path.join('inputsFromCalibration',filename)
   data = np.genfromtxt(path, dtype=int, delimiter='\t', names=True)
-  return data.shape[0]
+  # count number of unique particles
+  unique = data.shape[0]
+  return unique
+
+def getMappingFromFile(filename, col1, col2):
+  """Return mapping of new vs original particle number."""
+  # read from csv file that is result of particle filter
+  path = os.path.join('inputsFromCalibration',filename)
+  data = np.genfromtxt(path, dtype=int, delimiter='\t', names=True)
+  # make dictionary of new id : old id
+  mapping = dict(zip(data[col1], data[col2]))
+  ##print(mapping)
+  return mapping
 
 def getSampleInput(sampleNr, filename, landUseList = None):
 
