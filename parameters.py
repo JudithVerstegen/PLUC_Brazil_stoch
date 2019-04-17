@@ -10,8 +10,8 @@ def setOutputPath():
   arr_cellBasedStocks = os.path.join(results_path, 'arr_cellBased')
   arr_totalStocks = os.path.join(results_path, 'arr_totalStocks')  
   txt_files = os.path.join(results_path, 'txt_files')  
-  paths = [results_path, arr_cellBasedStocks, arr_totalStocks, txt_files]
-
+  finalMaps = os.path.join(results_path, 'maps')
+  paths = [results_path, arr_cellBasedStocks, arr_totalStocks, txt_files, finalMaps]
   for path in paths:
     if not os.path.exists(path):
       os.makedirs(path)
@@ -25,7 +25,7 @@ def getScenariosPaths(path, wildcard):
 
 def getMonteCarloSamples():
   """Return number of Monte Carlo samples. If nrMCsamples == 1, the script will run deterministically. If nrMCsamples > 1, then is stochastic."""
-  nrMCsamples = 1
+  nrMCsamples = 10000
   return nrMCsamples 
 
 def configModelComponents():
@@ -57,15 +57,10 @@ def configModelComponents():
   print 'Model components setup: SOC: {}, BC: {}, LUC: {}\t ==>\t{}\n'.format(SOC_component, BC_component, LUC_component, description)
   return runType, SOC_component, BC_component, LUC_component 
 
-def setNrLUtypes():
-  """Set the number of land use types for the case study. Zero is not LU type"""
-  nrLUtypes = 11 #
-  return nrLUtypes
-
 def getInitialLandUseMap():
   initLUmap = r'/home/rber/Work/PLUC_Brazil_stoch-master/projIniMaps/ini1.map'
   return initLUmap 
-def getMappingFromFile(filename, col1, col2):
+def getMappingFromFile    (filename, col1, col2):
   """Return mapping of new vs original particle number. Parameters: col1 == column with the ID of LU maps; col2 = column with the weight of LU maps"""
   # read from csv file that is result of particle filter
   path = os.path.join(filename)
@@ -142,26 +137,18 @@ def getScenariosNames():
   scenariosNames = ['No measures', 'High prod.', '2nd gen. SC', '2nd gen. EU', 'Cons. policies', 'All measures']
   return scenariosNames
 
-
 def referenceRaster():
   """Set the reference raster in which its geoparameters will be used to create/save new rasters/numpy arrays."""
-  refRaster = r"/home/rber/Work/CarbonMod/PLUC_scenarios/sc0/2030_1.map"
+  refRaster = r"/home/rber/Work/PLUC_Brazil_stoch-master/Results/sc1/2030_1.map"
   return refRaster
+
+def setNrLUtypes():
+  """Set the number of land use types for the case study. Zero is not LU type"""
+  nrLUtypes = 11 #
+  return nrLUtypes
 
 def LUtypesToMask():
   """Set the land use types to use for masking numpy arrays including "0" which represents NoData cells"""
   LUtypesToMask = [0, 1, 2, 10]
   return LUtypesToMask  
 
-def getGeoparameters(referenceRaster):
-  # Getting geoparameters of the original raster
-  refRaster = gdal.Open(referenceRaster)
-  geotransform = refRaster.GetGeoTransform()
-  originX = geotransform[0]  # top left-x
-  originY = geotransform[3]  # top left-y
-  pixelWidth = geotransform[1]  # w-e pixel resolution
-  pixelHeight = geotransform[5]  # n-s pixel resolution
-  rows = refRaster.RasterYSize
-  cols = refRaster.RasterXSize
-  geoparameters = [originX, originY, pixelWidth, pixelHeight, rows, cols]
-  return geoparameters
