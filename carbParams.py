@@ -14,7 +14,7 @@ import numpy as np
 def setOutputPath():
     """Create necessary folders to run the script and return the folder in which
     the results will be stored"""
-    results = os.path.join('results')
+    results = os.path.join('carb_results')
     txt_files = os.path.join('txt_files')
     arr_cellBasedStocks = os.path.join(results_path, 'arr_cellBased')
     arr_totalStocks = os.path.join(results_path, 'arr_totalStocks')

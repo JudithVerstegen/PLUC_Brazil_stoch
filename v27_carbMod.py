@@ -48,11 +48,11 @@ print ('Nr of scenarios (including initial): {}.\nMC simulation: {} samples per\
 scenario.'.format(len(scenariosDict), nrMCsamples))
 
 # Functions related to random values
-def generateRandomSOCref(inpTxt, nrMCsamples, outPath):
+def generateRandomSOCref(inpTxt, outPath):
     """For each Monte Carlo sample, create a text file filled with random values
     for 'SOC reference' w/ a factor of 1000. Arguments: inpTxt = Input file with
-    uncertainty range; """
-    mcRange = np.arange(nrMCsamples)
+    uncertainty range; outPath = path to save the text file."""
+    mcRange = np.arange(carbParams.getMonteCarloSamples())
     for i in mcRange:
         sample = i + 1
         outTxt = open(opj(outPath, 'socR_{}.txt'.format(str(sample))), 'w')
@@ -73,11 +73,11 @@ def generateRandomSOCref(inpTxt, nrMCsamples, outPath):
         outTxt.close()
 
 
-def generateRandomSOCfactor(inpTxt, nrMCsamples, outPath):
+def generateRandomSOCfactor(inpTxt, outPath):
     """For each Monte Carlo sample, create a text file filled with random values
     for 'SOC factors' w/ a factor of 1000. Arguments: inpTxt = Input file with 
-    uncertainty range"""
-    mcRange = np.arange(nrMCsamples)
+    uncertainty range; outPath = path to save the text file."""
+    mcRange = np.arange(carbParams.getMonteCarloSamples())
     for i in mcRange:
         sample = i + 1
         outTxt = open(opj(outPath, 'socF_{}.txt'.format(str(sample))), 'w')
@@ -112,10 +112,11 @@ def generateRandomSOCfactor(inpTxt, nrMCsamples, outPath):
         outTxt.close()
 
 
-def generateRandomBCstock(inpTxt, nrMCsamples, outPath):
+def generateRandomBCstock(inpTxt, outPath):
     """For each Monte Carlo sample, create a text file filled with random values
-    for 'biomass carbon stocks' (bcs) w/ a factor of 1000. Arguments: inpTxt = Input file with uncertainty range"""
-    mcRange = np.arange(nrMCsamples)
+    for 'biomass carbon stocks' (bcs) w/ a factor of 1000. Arguments: inpTxt = 
+    Input file with uncertainty range;outPath = path to save the text file."""
+    mcRange = np.arange(carbParams.getMonteCarloSamples())
     for i in mcRange:
         sample = i + 1
         outTxt = open(opj(outPath, 'bcs_{}.txt'.format(str(sample))), 'w')
