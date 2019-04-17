@@ -5,3 +5,5 @@
 *.npy
 *.wpr
 carbMod.wpr
+.RData
+.Rhistory

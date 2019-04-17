@@ -19,7 +19,8 @@ def setOutputPath():
     arr_cellBasedStocks = os.path.join(results_path, 'arr_cellBased')
     arr_totalStocks = os.path.join(results_path, 'arr_totalStocks')
     maps = os.path.join(results_path, 'maps')
-    paths = [results, txt_files, arr_cellBasedStocks, arr_totalStocks, maps]
+    statistical_test = os.path.join('statistical_test')
+    paths = [results, txt_files, arr_cellBasedStocks, arr_totalStocks, maps, statistical_test]
     for path in paths:
         if not os.path.exists(path):
             os.makedirs(path)

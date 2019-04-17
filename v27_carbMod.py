@@ -481,7 +481,7 @@ def saveData4statisticalTest(outFile):
         i += 1
     for stockType, data4StatsTest in zip(stockTypesList, data4StatsTestList):
         df = pd.DataFrame(data4StatsTest)
-        df.to_csv(opj(resultsDir, '{}_{}.txt'.format(outFile, stockType)),
+        df.to_csv(opj('statistical_test', '{}_{}'.format(outFile, stockType)),
                   sep=';', decimal='.', header=False, index=False)
 # Functions for boxplot
 
