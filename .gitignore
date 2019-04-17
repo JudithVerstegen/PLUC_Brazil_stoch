@@ -1,4 +1,7 @@
-cabMod.wpr
 /PLUC/results
 /txt_files
 /carb_results
+*.npz
+*.npy
+*.wpr
+
