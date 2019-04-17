@@ -1,0 +1,14 @@
+code	scenario
+0	Initial
+1	Reference
+3	Reference +eth
+4	High productivity
+6	High productivity +eth
+7 	2ndGen sugar cane 
+9	2ndGen sugar cane +eth
+10	2ndGen eucalyptus
+12	2ndGen eucalyptus +eth
+13	Conservation policies
+15	Conservation policies +eth
+16	All measures
+18	All measures +eth
