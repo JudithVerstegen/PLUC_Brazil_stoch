@@ -10,21 +10,21 @@ import numpy as np
 
 #-----------------------------     PARAMETERS     -----------------------------#
 
-
 def setOutputPath():
     """Create necessary folders to run the script and return the folder in which
     the results will be stored"""
     results = os.path.join('carb_results')
     txt_files = os.path.join('txt_files')
-    arr_cellBasedStocks = os.path.join(results_path, 'arr_cellBased')
-    arr_totalStocks = os.path.join(results_path, 'arr_totalStocks')
-    maps = os.path.join(results_path, 'maps')
+    arr_cellBasedStocks = os.path.join(results, 'arr_cellBased')
+    arr_totalStocks = os.path.join(results, 'arr_totalStocks')
+    maps = os.path.join(results, 'maps')
     statistical_test = os.path.join('statistical_test')
-    paths = [results, txt_files, arr_cellBasedStocks, arr_totalStocks, maps, statistical_test]
+    paths = [results, txt_files, arr_cellBasedStocks, 
+             arr_totalStocks, maps, statistical_test]
     for path in paths:
         if not os.path.exists(path):
             os.makedirs(path)
-    return results_path
+    return results
 
 
 def getScenariosPaths(path, wildcard):
@@ -46,8 +46,8 @@ def getMonteCarloSamples():
 def configModelComponents():
     """Return the model components setup for sensitivity analysis: it returns 
     which component will run deterministically (0) or stochastically (1). """
-    SOC_component = 1
-    BC_component = 0
+    SOC_component = 0
+    BC_component = 1
     LUC_component = 0
     lst = [SOC_component, BC_component, LUC_component]
     if lst == [1, 0, 0]:
@@ -77,11 +77,15 @@ def configModelComponents():
         SOC_component, BC_component, LUC_component, description)
     return runType, SOC_component, BC_component, LUC_component
 
-
 def getInitialLandUseMap():
-    initLUmap = r'/home/rber/Work/PLUC_Brazil_stoch-master/projIniMaps/ini1.map'
+    initLUmap = os.path.join('PLUC', 'projIniMaps', 'ini1.map')
     return initLUmap
 
+def referenceRaster():
+    """Set the reference raster in which its geoparameters will be used to 
+    create/save new rasters/numpy arrays."""
+    refRaster = getInitialLandUseMap()
+    return refRaster
 
 def getMappingFromFile(filename, col1, col2):
     """Return mapping of new vs original particle number. Parameters: col1 == 
@@ -111,8 +115,9 @@ def getStochasticLUmaps(scenario_path, pfMapping, wildcard):
     LUmapsToRun = {}
     nrRuns_acc = 0
     nrRuns_mcRange = 0
-    # Preparing mapping to run based on the getMonteCarloSamples() defined by the user
-    # In case getMonteCarloSamples() is less than the total runs of the first map...
+    # Preparing mapping to run based on the getMonteCarloSamples(), 
+    ## In case getMonteCarloSamples() is less than the total runs of the first,
+    ## do the following..
     if getMonteCarloSamples() < pfMapping[1]:
         LUmapsToRun[1] = [LUmapsDict[1], getMonteCarloSamples()]
     # Now creating a dictionary with the maps the will be used in the model and
@@ -127,7 +132,7 @@ def getStochasticLUmaps(scenario_path, pfMapping, wildcard):
                 nrRuns_mcRange += nrRuns
                 LUmapsToRun[nrLU] = [LUmap, nrRuns]
             # In case the getMonteCarloSamples() does not have the same value
-            # than a particle filter, the next line adds a last map and subtracts
+            # than a particle filter. Next line adds a last map and subtracts
             # the Nr of accumulated Nr of runs
             if nrRuns_mcRange == nrRuns_acc:
                 LUmapsToRun[nrLU + 1] = [LUmapsDict[nrLU + 1],
@@ -139,7 +144,7 @@ def getDeterministicLUmap(scenario_path, pfMapping):
     highestWeight = max(pfMapping.keys(), key=(lambda k: pfMapping[k]))
     LUmap = os.path.join(scenario_path, '2030_{}.map'.format(highestWeight))
     # print "Particle Filter: Highest weight between LU maps == code {} (weight\
-    # == {}, considering 10000 MCruns)".format(highestWeight, pfMapping[highestWeight])
+    # == {}, considering 10000 runs)".format(highestWeight, pfMapping[highestWeight])
     return LUmap
 
 
@@ -177,11 +182,7 @@ def getScenariosNames():
     return scenariosNames
 
 
-def referenceRaster():
-    """Set the reference raster in which its geoparameters will be used to 
-    create/save new rasters/numpy arrays."""
-    refRaster = r"/home/rber/Work/PLUC_Brazil_stoch-master/Results/sc1/2030_1.map"
-    return refRaster
+
 
 
 def setNrLUtypes():

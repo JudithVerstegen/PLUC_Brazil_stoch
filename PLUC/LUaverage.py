@@ -35,7 +35,7 @@ class CheckModel(DynamicModel):
             total = sum(list(self.mapping.values())[0:nr_samples])
             ##print(total)
             averageMap = summap / float(total)
-            path2 = os.path.join('results', 'sc' + str(ParametersProjection.getScenario()), str(aType) + 'L') # Renan: I added the "sc" folder here
+            path2 = os.path.join('results_stoch', 'sc' + str(ParametersProjection.getScenario()), str(aType) + 'L') # Renan: I added the "sc" folder here
             self.report(averageMap, path2)
       
 nr_samples = ParametersProjection.getNrSamplesFromFile('particle_mapping.csv')      

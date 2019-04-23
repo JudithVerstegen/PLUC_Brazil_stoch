@@ -12,7 +12,7 @@
   # define function to open and put into data frame
   get_data <- function(indicator_name){
   	# load all scenario & count rows and cols
-  	filename <- paste("GHGE_Eth_", indicator_name, ".csv", sep="")
+  	filename <- paste("data4StatsTest_", indicator_name, ".csv", sep="")
   	ghge <- read.csv(filename, sep=";", dec=".", header=FALSE)
   	summary(ghge)
   	class(ghge)
@@ -40,7 +40,7 @@
   k <- 6 # 6scenarios, 6 groups to compare
   n <- 10000 # cheating
   N <- k*n
-  indicator <- "soc" # select 'tc', 'soc' or 'bc' 
+  indicator <- "TC" # select 'TC', 'SOC' or 'BC' to change the input files 
   
   # extra column with combi scen and year for letters
   tot <- data.frame(scenario=rep("", N), datas=rep(as.double(NA),N), combi=rep("", N), stringsAsFactors = FALSE)
@@ -123,7 +123,6 @@
   agg.data$letter<-with(DF, letters$Letters[match(agg.data$combi, scenarios)])
   agg.data
   
-  
   #----------------------     PLOTS     ----------------------
   
   # five panels
@@ -138,9 +137,9 @@
   #hjust <-0.5
   #legpos <- "20"
   
-  if(indicator == "tc") {col = "#B2C29D"}
-  if(indicator == "soc") {col = "#DFC284"}
-  if(indicator == "bc") {col = "#7BC3BC"}
+  if(indicator == "TC") {col = "#B2C29D"}
+  if(indicator == "SOC") {col = "#DFC284"}
+  if(indicator == "BC") {col = "#7BC3BC"}
   
   ghge_min = min(ghge$data)
   ghge_max = max(ghge$data)
@@ -149,7 +148,7 @@
   ggplot(tot, aes(x=scenario, y = datas)) +
     stat_boxplot(coef=10, geom = "errorbar", colour = "#585858", size=0.2) + 
     geom_boxplot(coef=10, show.legend=FALSE, fill=col, colour = "#585858", size=0.35) + 
-    geom_text(data = agg.data[agg.data$scenario=="1 Ref",], size=5, aes(label=letter, y=max(tot$datas[tot$scenario=="1 Ref"])+1,vjust=0)) +
+    geom_text(data = agg.data[agg.data$scenario=="1 Ref",], size=5, aes(label=letter, y=max(tot$datas[tot$scenario=="1 Ref"])-1,vjust=0)) +
     geom_text(data = agg.data[agg.data$scenario=="2 HP",], size=5, aes(label=letter, y=max(tot$datas[tot$scenario=="2 HP"])+1,vjust=0)) +
     geom_text(data = agg.data[agg.data$scenario=="3 2ndSc",], size=5, aes(label=letter, y=max(tot$datas[tot$scenario=="3 2ndSc"])+1,vjust=0)) +
     geom_text(data = agg.data[agg.data$scenario=="4 2ndEu",], size=5, aes(label=letter, y=max(tot$datas[tot$scenario=="4 2ndEu"])+1,vjust=0)) +
@@ -162,12 +161,6 @@
                               expression(atop("2"^{nd}*"SC")), 
                               expression(atop("2"^{nd}*"EU")),
                               "CP", "All")) + 
-    # scale_x_discrete(labels=c(expression(atop("Ref.", paste("scenario"))),
-    #                           expression(atop("High", paste("productivity"))),
-    #                           expression(atop("2"^{nd}*"gen.", paste("sugar cane"))),
-    #                           expression(atop("2"^{nd}*"gen.", paste("eucalyptus"))),
-    #                           expression(atop("Conservation", paste("policies"))),
-    #                           expression(atop("All", paste("measures"))))) +
     theme(plot.title=element_text(hjust = 0.5),
           panel.background = element_blank(),
           panel.border = element_rect(colour = "grey", linetype = "solid", size=0.3, fill = NA),
@@ -178,8 +171,10 @@
   
   
   #############################################################
-  
-  # save figure 
+  # OBS: I couldn't figure out how to use savePlot in linux. 
+  # Therefore I was manually exporting the plots manually 
+ 
+   # save figure 
   #savePlot(file = 'agb_letters.png', type = "png")
   #savePlot(file = 'agb_letters.pdf', type = "pdf")
   #savePlot(file = 'species_letters.png', type = "png")
