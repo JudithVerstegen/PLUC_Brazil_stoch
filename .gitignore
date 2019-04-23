@@ -7,3 +7,6 @@
 carbMod.wpr
 .RData
 .Rhistory
+data4StatsTest*
+plot_*
+pvalues_*
