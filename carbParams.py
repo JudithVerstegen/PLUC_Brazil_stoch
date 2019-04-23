@@ -46,7 +46,7 @@ def getMonteCarloSamples():
 def configModelComponents():
     """Return the model components setup for sensitivity analysis: it returns 
     which component will run deterministically (0) or stochastically (1). """
-    SOC_component = 0
+    SOC_component = 1
     BC_component = 1
     LUC_component = 0
     lst = [SOC_component, BC_component, LUC_component]
@@ -63,16 +63,15 @@ def configModelComponents():
         runType = 'stcAll'
         description = 'Full stochastic'
     elif lst == [0, 0, 0]:
-        runType = 'detAll'
-        description = 'Full deterministic (NOT WITH IPCC VALUES)'
+        raise Exception('If you want a full deterministic run based on the un-\
+        certainty files used in the full stochastic runs, please set the number\
+        of Monte Carlos runs = 1 (see getMonteCarloSamples() function)')        
     else:
+        #runType = 'stcAll'
+        #description = 'tst'
         raise Exception('Two components set as stochastic and one set as\
-        deterministic. For Sensitivity Analysis, set just one component as\
-        stochastic.')
-    # elif SOC_component == 0 and BC_component == 0 and LUC_component == 0:
-        # raise Exception('There is a function in the main script that runs the \
-        # model deterministically (based obased on deterministic_getOverallStock).\
-        # . No need to set all components == 0 hereto')
+        deterministic. For Sensitivity Analysis, set just one component to run\
+        stochastically.')
     print 'Model components setup: SOC: {}, BC: {}, LUC: {}\t ==>\t{}\n'.format(
         SOC_component, BC_component, LUC_component, description)
     return runType, SOC_component, BC_component, LUC_component
@@ -106,7 +105,7 @@ def getMappingFromFile(filename, col1, col2):
 def getStochasticLUmaps(scenario_path, pfMapping, wildcard):
     """Assuming LU maps are the same for each SC, it returns a dictionary with 
     the total MC samples per PLUC PartFilterDict => e.g: if 03 PLUC runs (key), 
-    then No of runs == dict.values (assuming the model will run 10000x)"""
+    then the Nr of runs == dict.values (assuming the model will run 10000x)"""
     LUmapsList = glob.glob(os.path.join(scenario_path, wildcard))
     LUmapsDict = {
         int((v.split('2030_'))[-1].split(".")[0]): v for v in LUmapsList}
@@ -182,14 +181,10 @@ def getScenariosNames():
     return scenariosNames
 
 
-
-
-
 def setNrLUtypes():
     """Set the number of land use types for the case study. Zero is not LU type"""
     nrLUtypes = 11
     return nrLUtypes
-
 
 def LUtypesToMask():
     """Set the land use types to use for masking numpy arrays including "0" 

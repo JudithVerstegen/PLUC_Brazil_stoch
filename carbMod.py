@@ -19,7 +19,7 @@ from os.path import join as opj
 
 ################################################################################
 
-#-----------------------------     PARAMETERS     -----------------------------#
+#--------------------------------     SETUP     -------------------------------#
 np.set_printoptions(suppress=True)
 
 # Creating outputs' path (all results are saved in resultsDir variable)
@@ -43,7 +43,7 @@ getCellBasedCarbonStock = 0
 # the 'modelRunType' setup. For cell based stocks: just saved 'modelRunType' ==
 # full stochastic (to use in the cell-based computations)
 saveArrays4ov_stock = 0
-saveArrays4cb_stock = 0
+saveArrays4cb_stock = 1
 
 # Setup to plot/show and save figures...
 # OBS: For sensitivity analysis, you must run the model four times: For each time,
@@ -51,10 +51,10 @@ saveArrays4cb_stock = 0
 # (see carbParams.configModelComponents() for better understanding). IMPORTANT: 
 # the sensitivity analysis is only possible if you set saveArrays4ov_stock to 1 
 # in each of the runs!
-plotSensAnalysis = 1
-plotBoxplot = 0 
-showPlots = 1
-savePlots = 1
+plotSensAnalysis = 0
+plotBoxplot = 0
+showPlots = 0
+savePlots = 0
 
 # Dictionary corresponding to the path for scenarios with LU maps,
 scenariosDict = carbParams.getScenariosPaths(opj('PLUC/results_stoch'), 'sc*')
@@ -274,11 +274,15 @@ def getLUmap(sc, scenario_path, LUmapStoch=""):
     if sc == 0:
         LUmap = carbParams.getInitialLandUseMap()
     if sc > 0:
-        if LUC_comp == 1:  # stochastic
-            LUmap = LUmapStoch
-        if LUC_comp == 0:  # deterministic
+        if nrMCsamples == 1:
             LUmap = carbParams.getDeterministicLUmap(
-                scenario_path, particleFilter_mapping)
+                    scenario_path, particleFilter_mapping)
+        if nrMCsamples > 1:
+            if LUC_comp == 1:  # stochastic
+                LUmap = LUmapStoch
+            if LUC_comp == 0:  # deterministic
+                LUmap = carbParams.getDeterministicLUmap(
+                    scenario_path, particleFilter_mapping)
     return LUmap
 
 def getLUmapMCrange(nrLUmap, mcRuns_LUmap, mcRun_accumulated):
@@ -309,7 +313,7 @@ def getTotalSOCstock(climLu, climSoil, LUmask, SOC_comp):
     if SOC_comp == 1:  # stochastic
         txtFile_socF = opj(txtFilesPath, 'socF_{}.txt'.format(str(sample)))
         txtFile_socR = opj(txtFilesPath, 'socR_{}.txt'.format(str(sample)))
-    if SOC_comp == 0:  # deterministic for sensitivity analysis
+    if SOC_comp == 0 or nrMCsamples == 1: # deterministic for sensitivity analysis
         txtFile_socF = opj('socF_deterministic.txt')
         txtFile_socR = opj('socR_deterministic.txt')
     if SOC_comp == 'IPCC':  # IPCC deterministic - this is only used inside the 
@@ -339,7 +343,7 @@ def getTotalBCstock(climLu, LUmask, BC_comp):
     # Setting the path of txt files (depending if stochastic or not)
     if BC_comp == 1:  # stochastic
         txtFile_bcs = opj(txtFilesPath, 'bcs_{}.txt'.format(str(sample)))
-    if BC_comp == 0:  # deterministic for sensitivity analysis
+    if BC_comp == 0 or nrMCsamples == 1:  # deterministic for sensitivity analysis
         txtFile_bcs = opj('bcs_detSensAnalysis.txt')
     if BC_comp == 'IPCC':  # IPCC deterministic - this is only used inside the 
         #IPCCdet_getOverallCarbonStock() function
@@ -627,7 +631,7 @@ def getBoxplot(socGHGe, bcGHGe, socGHGe_det, bcGHGe_det): # OBS: I  couldn't fig
                  markersize=6, label='Mean - stochastic')
         plt.plot([], [], marker="^", markerfacecolor='w', markeredgecolor="#c10202",
                  markersize=8, color="w", label="Mean - deterministic")
-        plt.legend(fontsize=7, loc='upper adj', frameon=True)
+        plt.legend(fontsize=7, loc='upper right', frameon=True)
         plt.grid(which="minor", axis='x', color='0.3', linewidth=0.15)
         ax.xaxis.set_minor_locator(AutoMinorLocator(2))
         plt.ylabel('GHG emissions\n' + r'$gram$ $CO_2$-$eq$/$Mj$$_E$$_t$$_O$$_H$')

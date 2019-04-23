@@ -10,3 +10,6 @@ carbMod.wpr
 data4StatsTest*
 plot_*
 pvalues_*
+bcs_uncertainty_detForest.txt
+carbParams.pyc
+v28_carbMod_TrialRuns.py
