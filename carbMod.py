@@ -3,7 +3,7 @@ Carbon emissions model derived from land use changes in Brazil
 """
 
 import time
-print "Starting... {}".format(time.asctime(time.localtime(time.time())))
+print("Starting... {}".format(time.asctime(time.localtime(time.time()))))
 
 import gdal
 import osr
@@ -43,7 +43,7 @@ getCellBasedCarbonStock = 0
 # the 'modelRunType' setup. For cell based stocks: just saved 'modelRunType' ==
 # full stochastic (to use in the cell-based computations)
 saveArrays4ov_stock = 0
-saveArrays4cb_stock = 1
+saveArrays4cb_stock = 0
 
 # Setup to plot/show and save figures...
 # OBS: For sensitivity analysis, you must run the model four times: For each time,
@@ -1144,4 +1144,4 @@ if getCellBasedCarbonStock == 1:
             #print ("SC{}\t|\t processing took {:.2f} min\n".format(
                 #sc, float(time.time() - starttime) / 60))
                 
-print "Finished at: {}".format(time.asctime(time.localtime(time.time())))
+print("Finished at: {}".format(time.asctime(time.localtime(time.time()))))

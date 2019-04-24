@@ -39,16 +39,16 @@ def getScenariosPaths(path, wildcard):
 def getMonteCarloSamples():
     """Return number of Monte Carlo samples. If nrMCsamples == 1, the script
     will run deterministically. If nrMCsamples > 1, then is stochastic."""
-    nrMCsamples = 10000
+    nrMCsamples = 1#0000
     return nrMCsamples
 
 
 def configModelComponents():
     """Return the model components setup for sensitivity analysis: it returns 
     which component will run deterministically (0) or stochastically (1). """
-    SOC_component = 1
-    BC_component = 1
-    LUC_component = 0
+    SOC_component = 0
+    BC_component = 0
+    LUC_component = 1
     lst = [SOC_component, BC_component, LUC_component]
     if lst == [1, 0, 0]:
         runType = 'stcSOC'
@@ -72,8 +72,8 @@ def configModelComponents():
         raise Exception('Two components set as stochastic and one set as\
         deterministic. For Sensitivity Analysis, set just one component to run\
         stochastically.')
-    print 'Model components setup: SOC: {}, BC: {}, LUC: {}\t ==>\t{}\n'.format(
-        SOC_component, BC_component, LUC_component, description)
+    print('Model components setup: SOC: {}, BC: {}, LUC: {}\t ==>\t{}\n'.format(
+        SOC_component, BC_component, LUC_component, description))
     return runType, SOC_component, BC_component, LUC_component
 
 def getInitialLandUseMap():
