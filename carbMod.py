@@ -16,6 +16,8 @@ import scipy.stats as ss
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 from os.path import join as opj
+from six import iteritems, itervalues
+
 
 ################################################################################
 
@@ -34,14 +36,14 @@ modelRunType, SOC_comp, BC_comp, LUC_comp = carbParams.configModelComponents()
 
 # Model configuration (you must turn on/turn off, depending of which part you 
 # want to run 
-generateRandomValues = 0
-getOverallCarbonStock = 0
+generateRandomValues = 1
+getOverallCarbonStock = 1
 getCellBasedCarbonStock = 0
 
 # Defining if you want to save arrays. For overall carbon stocks: used to save the 
 # arrays w/ the sum of CStocks per MCr. If 1, the arrays will be saved regardless 
-# the 'modelRunType' setup. For cell based stocks: just saved 'modelRunType' ==
-# full stochastic (to use in the cell-based computations)
+# the 'modelRunType' setup. For cell based stocks: the model is set to just save
+# if 'modelRunType' = 'stcAll' (full stochastic), to use in cell-based computations)
 saveArrays4ov_stock = 0
 saveArrays4cb_stock = 0
 
@@ -51,9 +53,9 @@ saveArrays4cb_stock = 0
 # (see carbParams.configModelComponents() for better understanding). IMPORTANT: 
 # the sensitivity analysis is only possible if you set saveArrays4ov_stock to 1 
 # in each of the runs!
-plotSensAnalysis = 0
-plotBoxplot = 0
-showPlots = 0
+plotSensAnalysis = 1
+plotBoxplot = 1
+showPlots = 1
 savePlots = 0
 
 # Dictionary corresponding to the path for scenarios with LU maps,
@@ -378,9 +380,9 @@ def getDifferenceInStocksPerPairScenario(dictio_totStockPerMCr):
     scCode_initial, scCode_Eth, scCode_addEth = carbParams.getScenariosType()
     # Dividing input array in two dictionaries: 'Eth' and 'addEth' scenarios
     d_scEth = {k: np.asarray(
-        v) for k, v in dictio_totStockPerMCr.iteritems() if k in scCode_Eth}
+        v) for k, v in sorted(iteritems(dictio_totStockPerMCr)) if k in scCode_Eth}
     d_scAddEth = {k: np.asarray(
-        v) for k, v in dictio_totStockPerMCr.iteritems() if k in scCode_addEth}
+        v) for k, v in sorted(iteritems(dictio_totStockPerMCr)) if k in scCode_addEth}
     # Computing the subtraction: 'addEth' minus 'Eth' scenarios
     diff_totStockPerScPair = {
         k: d_scAddEth[k] - d_scEth.get(k - 2) for k in d_scAddEth.keys()}
@@ -405,7 +407,7 @@ def IPCCdet_getDiffStockPerPairScenarios():
                       for lu_path in sorted(LUscenarios)}
     luMapsDict_det[0] = carbParams.getInitialLandUseMap()
 
-    for sc, LUmapPath in luMapsDict_det.iteritems():
+    for sc, LUmapPath in sorted(iteritems(luMapsDict_det)):
         LUmap = rasterToArray(LUmapPath)
         clim_lu = (climate + LUmap)
         mask = maskNoCarbonCells(LUmap)
@@ -451,7 +453,7 @@ def getStats_OverallCarbonStock(statsType, outFile=""):
     for i, (stockType, dictio) in enumerate(zip(stockTypesList, stockDictiosList)):
         print ("\n{}: carbon stocks + uncertainty for  ''{}'' (tons C/ha):".
             format(statsType, stockType))
-        for sc, arr in dictio.iteritems(): # arr = array w/ overall stocks per MCrun
+        for sc, arr in sorted(iteritems(dictio)): # arr = array w/ overall stocks per MCrun
             mean = np.mean(arr)
             median = np.median(arr)
             std = np.std(arr)
@@ -474,9 +476,9 @@ def getStats_OverallCarbonStock(statsType, outFile=""):
                 statsToSave[sc] = toSave
                 meanDict[sc] = meanToReturn
             else:
-                for k, v in toSave.iteritems():
+                for k, v in sorted(iteritems(toSave)):
                     statsToSave[sc][k] = v
-                for k, v in meanToReturn.iteritems():
+                for k, v in sorted(iteritems(meanToReturn)):
                     meanDict[sc][k] = v
             print ('SC{} -\t|\tMean: {:.3f} ({:.2f}% , {:.2f}%)'.
                    format(sc, mean, uncLow, uncHigh))
@@ -531,7 +533,7 @@ def getEmissionsDueToEthanol(dictio_diffSOC, dictio_diffBC, dictio_diffTC,
     stockTypesList = ['SOC', 'BC', 'TC']
     stockDictiosList = dictio_diffSOC, dictio_diffBC, dictio_diffTC
     for stockType, dictio in zip(stockTypesList, stockDictiosList):
-        for (k1, array_carbonStock), (k2, deltaEth) in zip(dictio.iteritems(), ethDiff.iteritems()):
+        for (k1, array_carbonStock), (k2, deltaEth) in zip(sorted(iteritems(dictio)), sorted(iteritems(ethDiff))):
             if k1 == k2:  # k1 and 2 are both scenario codes
                 # Converting values to gram CO2-eq Mj-1 EtOH (final measurement unit)
                 # a) converting cStocks (tonne/ha) in total tonnes
@@ -553,15 +555,15 @@ def getEmissionsDueToEthanol(dictio_diffSOC, dictio_diffBC, dictio_diffTC,
                     BC_ghgDueToEth[k1] = array_FinalUnit
                 if stockType == 'TC':
                     TC_ghgDueToEth[k1] = array_FinalUnit
-                for k, v in meanToDict.iteritems():
+                for k, v in sorted(iteritems(meanToDict)):
                     ghgDueToEth_mean[k1][k] = v
     # Saving means to csv file
     data = pd.DataFrame.from_dict(ghgDueToEth_mean, orient='index')
     data = data.reindex(sorted(data.columns), axis=1)
+    data = data.round(2)
     data.to_csv(opj(resultsDir, outFile), sep=';',
                 decimal='.', header=True, index=True)
-    print ('\n{}:\tEmissions due to increase in eth. prod. (CO2-eq Mj-1 EtOH):\n'
-           .format(outFile)),(data)
+    print ('\n'),('{}:\tEmissions due to increase in eth. prod. (CO2-eq Mj-1 EtOH):'.format(outFile)),('\n'), (data)
     return SOC_ghgDueToEth, BC_ghgDueToEth, TC_ghgDueToEth
 
 
@@ -576,7 +578,7 @@ def saveData4statisticalTest(outFile):
     stockDictiosList = [socGHGe, bcGHGe, tcGHGe]
     i = 0
     for dictio in stockDictiosList:
-        for array in dictio.values():
+        for array in list(itervalues(dictio)):
             data4StatsTestList[i].append(array)
         i += 1
     for stockType, data4StatsTest in zip(stockTypesList, data4StatsTestList):
@@ -606,13 +608,15 @@ def getBoxplot(socGHGe, bcGHGe, socGHGe_det, bcGHGe_det): # OBS: I  couldn't fig
         plt.show()
         fig, ax = plt.subplots(figsize=(8, 5))
         colors = carbParams.figureColors()
-        socGHGe, bcGHGe = socGHGe.values(), bcGHGe.values()
-        socGHGe_det, bcGHGe_det = socGHGe_det.values(), bcGHGe_det.values()
-        socBoxes = plt.boxplot(socGHGe, positions=np.array(xrange(len(socGHGe)))
-                               * 2 + 0.4, sym='', usermedians=socGHGe_det,
+        socGHGe = list(itervalues(socGHGe))
+        bcGHGe = list(itervalues(bcGHGe))
+        socGHGe_det = [v[0] for v in list(itervalues(socGHGe_det))]
+        bcGHGe_det = [v[0] for v in list(itervalues(bcGHGe_det))]
+        socBoxes = plt.boxplot(socGHGe, positions=np.array(range(len(socGHGe)))
+                               * 2 + 0.4, sym='', usermedians=socGHGe_det, 
                                meanline=True, showmeans=True, patch_artist=True, 
                                widths=0.6)
-        bcBoxes = plt.boxplot(bcGHGe, positions=np.array(xrange(len(bcGHGe))) 
+        bcBoxes = plt.boxplot(bcGHGe, positions=np.array(range(len(bcGHGe))) 
                               * 2 - 0.4, sym='', usermedians=bcGHGe_det, 
                               meanline=True, showmeans=True, patch_artist=True, 
                               widths=0.6)
@@ -751,7 +755,7 @@ def arrayToMap(inpArray, outRaster):
     outRaster.SetProjection(outRasterSRS.ExportToWkt())
     outband.FlushCache()
 
-#-------------------     1. GENERATING RANDOM VALUES     ---------------------#
+#-------------------     1. GENERATING RANDOM VALUES     ----------------------#
 
 txtFilesPath = opj('txt_files')
 if generateRandomValues == 1:
@@ -762,9 +766,9 @@ if generateRandomValues == 1:
     generateRandomSOCfactor('socF_uncertainty.txt', txtFilesPath)
     generateRandomBCstock('bcs_uncertainty.txt', txtFilesPath)
     print ('\nChecking occurrence of negative values...')
-    checkNegRandomValues(txtFilesPath)
+    #checkNegRandomValues(txtFilesPath)
 
-#-----------------     2. PROCESSING OVERALL CARBON STOCKS     -----------------
+#-----------------     2. PROCESSING OVERALL CARBON STOCKS     ----------------#
 
 # Input rasters
 climate = rasterToArray('climate.map')
@@ -785,7 +789,7 @@ if getOverallCarbonStock == 1:
     d_tCperMCr = {sc: [] for sc in scenariosDict.keys()}
     
     # Running the model stochastically according to 'modelRunType' variable
-    for sc, scPath in scenariosDict.iteritems():
+    for sc, scPath in sorted(iteritems(scenariosDict)):
         print ('\nSC{} - computing overall carbon stocks (t C/ha)\t...\tStart: {}'.
                format(sc, time.asctime(time.localtime(time.time()))))
         if LUC_comp == 0 or sc == 0:
@@ -884,6 +888,7 @@ ethDiff = getEthanolDiffProduction('magnet_output.txt')
 socGHGe, bcGHGe, tcGHGe = getEmissionsDueToEthanol(diff_tSOCeth, diff_tBCeth,
                         diff_tCeth, ethDiff, '{}_GHGe.csv'.format(modelRunType))
 
+
 # Now getting deterministic emissions (IPCC)  
 socGHGe_det, bcGHGe_det, tcGHGe_det = getEmissionsDueToEthanol(
     diff_tSOCeth_det, diff_tBCeth_det, diff_tCeth_det, ethDiff, 'determ_GHGe.csv')
@@ -925,7 +930,7 @@ def getCellBasedMeanStocks(csType, sc, saveToFile):
         LUmapPath = carbParams.getInitialLandUseMap()
         LUmap = rasterToArray(LUmapPath)
         mask = maskNoCarbonCells(LUmap)
-        for sample, fl in npzFilesDict.iteritems():
+        for sample, fl in sorted(iteritems(npzFilesDict)):
             npData = np.load(fl)
             if csType == 'soc' or csType == 'bc':
                 cs = npData[csType]
@@ -994,7 +999,7 @@ def getCellBasedStdStocks(csType, cellBased_mean, sc, saveToFile):
         LUmapPath = carbParams.getInitialLandUseMap()
         LUmap = rasterToArray(LUmapPath)
         mask = maskNoCarbonCells(LUmap)
-        for sample, fl in npzFilesDict.iteritems():
+        for sample, fl in sorted(iteritems(npzFilesDict)):
             npData = np.load(fl)
             if csType == 'soc' or csType == 'bc':
                 cs = npData[csType]
@@ -1096,7 +1101,7 @@ def getDiffCellBasedEth_cellStocks_analysis(scEth, csType, luRaster, inPath, sav
 
 if getCellBasedCarbonStock == 1:
     LUC_comp = 1
-    for sc, scPath in scenariosDict.iteritems():
+    for sc, scPath in sorted(iteritems(scenariosDict)):
         print ('\nSC{} - computing cell-based carbon stocks (tonne C/ha)\t...\t\
         Start time: {}'.format(sc, time.asctime(time.localtime(time.time()))))
         # Getting mean & std mapsmaps
@@ -1118,14 +1123,14 @@ if getCellBasedCarbonStock == 1:
     scInitial, scEth, scAddEth = carbParams.getScenariosType()
     # Dividing input array in two dictionaries: 'Eth' and 'addEth' scenarios
     #d_scEth = {k: np.asarray(
-        #v) for k, v in dictio_totStockPerMCr.iteritems() if k in scCode_Eth}
+        #v) for k, v in sorted(iteritems(dictio_totStockPerMCr)) if k in scCode_Eth}
     #d_scAddEth = {k: np.asarray(
-        #v) for k, v in dictio_totStockPerMCr.iteritems() if k in scCode_addEth}
+        #v) for k, v in sorted(iteritems(dictio_totStockPerMCr)) if k in scCode_addEth}
     ## Computing the subtraction: 'addEth' minus 'Eth' scenarios
     #diff_totStockPerScPair = {
         #k: d_scAddEth[k] - d_scEth.get(k - 2) for k in d_scAddEth.keys()}
     
-    #for sc, scPath in scenariosDict.iteritems():
+    #for sc, scPath in sorted(iteritems(scenariosDict)):
     
     #for sc, rLU in enumerate(luScenarios):
         #if sc != 0:

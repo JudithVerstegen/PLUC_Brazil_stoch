@@ -1,5 +1,5 @@
 """ 
-Parameters to run "carbMod_BRA" model
+Parameters to run "carbMod" model
 """
 
 import os
@@ -39,15 +39,15 @@ def getScenariosPaths(path, wildcard):
 def getMonteCarloSamples():
     """Return number of Monte Carlo samples. If nrMCsamples == 1, the script
     will run deterministically. If nrMCsamples > 1, then is stochastic."""
-    nrMCsamples = 1#0000
+    nrMCsamples = 10000
     return nrMCsamples
 
 
 def configModelComponents():
     """Return the model components setup for sensitivity analysis: it returns 
     which component will run deterministically (0) or stochastically (1). """
-    SOC_component = 0
-    BC_component = 0
+    SOC_component = 1
+    BC_component = 1
     LUC_component = 1
     lst = [SOC_component, BC_component, LUC_component]
     if lst == [1, 0, 0]:
@@ -63,9 +63,12 @@ def configModelComponents():
         runType = 'stcAll'
         description = 'Full stochastic'
     elif lst == [0, 0, 0]:
-        raise Exception('If you want a full deterministic run based on the un-\
-        certainty files used in the full stochastic runs, please set the number\
-        of Monte Carlos runs = 1 (see getMonteCarloSamples() function)')        
+        if getMonteCarloSamples() != 1:
+            raise Exception("For a full deterministic run based on the\
+            uncertainty  files used for 'full stochastic runs', you have to set\
+            carbParams.getMonteCarloSamples() = 1") 
+        runType = 'detAll'
+        description = 'Full deterministic'        
     else:
         #runType = 'stcAll'
         #description = 'tst'
