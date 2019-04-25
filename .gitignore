@@ -13,3 +13,4 @@ pvalues_*
 bcs_uncertainty_detForest.txt
 carbParams.pyc
 v28_carbMod_TrialRuns.py
+/__pycache__

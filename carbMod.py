@@ -36,9 +36,9 @@ modelRunType, SOC_comp, BC_comp, LUC_comp = carbParams.configModelComponents()
 
 # Model configuration (you must turn on/turn off, depending of which part you 
 # want to run 
-generateRandomValues = 1
-getOverallCarbonStock = 1
-getCellBasedCarbonStock = 0
+generateRandomValues = 0
+getOverallCarbonStock = 0
+getCellBasedCarbonStock = 1
 
 # Defining if you want to save arrays. For overall carbon stocks: used to save the 
 # arrays w/ the sum of CStocks per MCr. If 1, the arrays will be saved regardless 
@@ -47,15 +47,15 @@ getCellBasedCarbonStock = 0
 saveArrays4ov_stock = 0
 saveArrays4cb_stock = 0
 
-# Setup to plot/show and save figures...
+# Setup to plot/show/save figures...
 # OBS: For sensitivity analysis, you must run the model four times: For each time,
 # the modelRunType variable must be set to 'stcSOC'/'stcBC'/'stcLUC'/'stcAll'. 
 # (see carbParams.configModelComponents() for better understanding). IMPORTANT: 
 # the sensitivity analysis is only possible if you set saveArrays4ov_stock to 1 
 # in each of the runs!
-plotSensAnalysis = 1
-plotBoxplot = 1
-showPlots = 1
+plotSensAnalysis = 0
+plotBoxplot = 0
+showPlots = 0
 savePlots = 0
 
 # Dictionary corresponding to the path for scenarios with LU maps,
@@ -400,10 +400,10 @@ def IPCCdet_getDiffStockPerPairScenarios():
     d_tSOC_det = {sc: [] for sc in scenariosDict.keys()}
     d_tBC_det = {sc: [] for sc in scenariosDict.keys()}
     d_tC_det = {sc: [] for sc in scenariosDict.keys()}
-    # Getting LUmaps using in Floor's paper 
+    # Getting LUmaps used in Floor's paper 
     LUmaps_Path = opj('PLUC', 'results_det')
-    LUscenarios = glob.glob(os.path.join(LUmaps_Path , 'sc*'))
-    luMapsDict_det = {int((lu_path.split('/sc'))[-1]):opj(lu_path, 'landUse0025.map') 
+    LUscenarios = glob.glob(opj(LUmaps_Path , 'sc*'))
+    luMapsDict_det = {((lu_path.split('/sc'))[-1]):opj(lu_path, 'landUse0025.map') 
                       for lu_path in sorted(LUscenarios)}
     luMapsDict_det[0] = carbParams.getInitialLandUseMap()
 
@@ -599,19 +599,22 @@ def setupBoxplot(boxplot, color):
              linewidth=1.6, marker="+", markersize=6)
 
 
-def getBoxplot(socGHGe, bcGHGe, socGHGe_det, bcGHGe_det): # OBS: I  couldn't figure out how to use a marker instead of 
-    # a line in the "usermedians" argument of boxplot, that's why in the plot, 
-    # legend and boxplot don't match for "deterministic" in the plot 
-    """Create a boxplot of GHG emissions due to ethanol increase between 
+def getBoxplot(socGHGe, bcGHGe, socGHGe_det, bcGHGe_det): # OBS: I  couldn't 
+    #figure out how to use a marker instead of a line in the "usermedians" 
+    # argument of boxplot, that's why in the plot legend and boxplot don't match
+    # for "deterministic" in the plot 
+    """Create a boxplot of SOC/BC GHG emissions due to ethanol increase between 
     scenarios with eth ('eth')and with additional eth ('addEth')."""
     if plotBoxplot == 1:
         plt.show()
         fig, ax = plt.subplots(figsize=(8, 5))
         colors = carbParams.figureColors()
+        # Setting input data for boxplots (both stoch and det results  
         socGHGe = list(itervalues(socGHGe))
         bcGHGe = list(itervalues(bcGHGe))
         socGHGe_det = [v[0] for v in list(itervalues(socGHGe_det))]
         bcGHGe_det = [v[0] for v in list(itervalues(bcGHGe_det))]
+        # building boxplots
         socBoxes = plt.boxplot(socGHGe, positions=np.array(range(len(socGHGe)))
                                * 2 + 0.4, sym='', usermedians=socGHGe_det, 
                                meanline=True, showmeans=True, patch_artist=True, 
@@ -620,6 +623,7 @@ def getBoxplot(socGHGe, bcGHGe, socGHGe_det, bcGHGe_det): # OBS: I  couldn't fig
                               * 2 - 0.4, sym='', usermedians=bcGHGe_det, 
                               meanline=True, showmeans=True, patch_artist=True, 
                               widths=0.6)
+        # Customizing boxplots
         setupBoxplot(bcBoxes, colors[1])
         setupBoxplot(socBoxes, colors[0])
         ymin = int(np.max(np.stack((socGHGe, bcGHGe))) * -1)
@@ -628,7 +632,7 @@ def getBoxplot(socGHGe, bcGHGe, socGHGe_det, bcGHGe_det): # OBS: I  couldn't fig
         plt.xticks(np.arange(0, len(socGHGe) * 2, 2), 
                    carbParams.getScenariosNames(), fontsize=8.5)
         plt.xlim(-1, len(socGHGe) * 2 - 1)
-        # draw bar/plots to use as legend
+        # Drawing bars and plots to use in legend
         plt.bar(1, [0], color=colors[0], label='SOC', alpha=0.80)
         plt.bar(1, [0], color=colors[1], label='Biomass', alpha=0.80)
         plt.plot([], color='k', linewidth=2, marker="+",
@@ -643,6 +647,58 @@ def getBoxplot(socGHGe, bcGHGe, socGHGe_det, bcGHGe_det): # OBS: I  couldn't fig
             plt.savefig(opj(resultsDir, 'plot_boxplot'), dpi=700)
         if showPlots == 1:
             plt.show()
+
+def getBoxplotThreshold(tcGHGe, tcGHGe_det):  
+    """Create a boxplot of total GHG emissions due to ethanol increase between 
+    scenarios with eth ('eth') and with additional eth ('addEth'). Also, includes
+    the five thresholds related to Directive EU 2018/2001 """
+    if plotBoxplot == 1:
+        plt.show()
+        fig, ax = plt.subplots(figsize=(8, 5))
+        colors = carbParams.figureColors()
+        # Setting input data for boxplots (both stoch and det results  
+        tcGHGe = list(itervalues(tcGHGe))
+        tcGHGe_det = [v[0] for v in list(itervalues(tcGHGe_det))]
+        tcBoxes = plt.boxplot(tcGHGe, positions=np.array(range(len(tcGHGe))) 
+                              * 2, sym='', usermedians=tcGHGe_det, 
+                              meanline=True, showmeans=True, patch_artist=True, 
+                              widths=0.6)
+        # Customizing boxplots
+        setupBoxplot(tcBoxes, colors[-1])
+        ymin = int(np.max(tcGHGe)) * -1
+        ymax = int(np.max(tcGHGe))
+        plt.yticks(np.arange(ymin, ymax + 1, step=5))
+        plt.xticks(np.arange(0, len(tcGHGe) * 2, 2), 
+                   carbParams.getScenariosNames(), fontsize=8.5)
+        plt.xlim(-1, len(tcGHGe) * 2 - 1)
+        # Drawing bars and plots to use in legend
+        #plt.bar(1, [0], color=colors[-1], label='', alpha=0.80)
+        plt.plot([], color='k', linewidth=2, marker="+",
+                 markersize=6, label='Mean - stochastic')
+        plt.plot([], [], marker="^", markerfacecolor='w', markeredgecolor="#c10202",
+                 markersize=8, color="w", label="Mean - deterministic")
+        # The five thresholds based on (EU) 2018/2001 (as percentage)
+        thresholds = [0.5, 0.6, 0.65, 0.7, 0.8]
+        colors = ['#c7e9b4', '#7fcdbb', '#41b6c4', '#1d91c0', '#0c2c84']        
+        labels = ['50 % threshold', '60 % threshold', 
+                  '65 % threshold', '70 % threshold', '80 % threshold']
+        #  Assumed Life cycle GHG emissions of eth. prod. from sugar cane in BRA
+        SC_emissions = 20 # gram CO2-eq/MJ
+        # Assumed default GHG emissions from gasoline 
+        GSLN_emissions = 94 # gram CO2-eq/MJ
+        # Adding thresholds in plot 
+        for percent, color, label in zip(thresholds, colors, labels):
+            plt.axhline(y=(GSLN_emissions*(1-percent)), linewidth = 0.9, 
+                        linestyle = '--', color = color, label = label)
+        plt.legend(fontsize=7, loc='upper right', frameon=True)
+        plt.grid(which="minor", axis='x', color='0.3', linewidth=0.15)
+        ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+        plt.ylabel('GHG emissions\n' + r'$gram$ $CO_2$-$eq$/$Mj$$_E$$_t$$_O$$_H$')
+        if savePlots == 1:
+            plt.savefig(opj(resultsDir, 'plot_boxplot_threshold'), dpi=700)
+        if showPlots == 1:
+            plt.show()
+
 
 # Function to run sensitivity analysis
 def getSensitivityAnalysis():
@@ -896,6 +952,7 @@ socGHGe_det, bcGHGe_det, tcGHGe_det = getEmissionsDueToEthanol(
 #-----   5. OUTPUTS (BOXPLOT, SENS. ANALYSIS, DATA FOR STATISTICAL TEST)  -----#
 
 getBoxplot(socGHGe, bcGHGe, socGHGe_det, bcGHGe_det)
+getBoxplotThreshold(tcGHGe, tcGHGe_det)
 getSensitivityAnalysis()
 if modelRunType == "stcAll":
     saveData4statisticalTest('data4StatsTest')
@@ -1056,11 +1113,27 @@ def getCellBasedStdStocks(csType, cellBased_mean, sc, saveToFile):
     return csStd_cell
 
 def getDiffCellBasedEth_cellStocks_analysis(scEth, csType, luRaster, inPath, saveTo):
-    "XXXXX"
+    """ """
+    scInitial, scEth, scAddEth = carbParams.getScenariosType()
+    
     ethFiles = [npFile for npFile in sorted(
         glob.iglob(opj(inPath, "arrays_sc{}mc*".format(scEth))))]
-    noEthFiles = [npFile for npFile in sorted(glob.iglob(
+    ADDeEthFiles = [npFile for npFile in sorted(glob.iglob(
         opj(inPath, "arrays_sc{}mc*".format(scEth - 1))))]
+    
+    
+    npzFiles = glob.glob(opj(resultsDir, 'arr_cellBased', 'cbStocks_sc{}mc*'.
+                             format(sc)))
+    npzFilesDict = {
+        int((v.split('mc'))[-1].split('.')[0]): v for v in sorted(npzFiles)}    
+    
+    # Dividing input array in two dictionaries: 'Eth' and 'addEth' scenarios
+    d_scEth = {k: np.asarray(v) for k, v in sorted(iteritems(dictio_totStockPerMCr)) if k in scCode_Eth}
+    d_scAddEth = {k: np.asarray(v) for k, v in sorted(iteritems(dictio_totStockPerMCr)) if k in scCode_addEth}
+    #Computing the subtraction: 'addEth' minus 'Eth' scenarios
+    #diff_totStockPerScPair = {
+        #k: d_scAddEth[k] - d_scEth.get(k - 2) for k in d_scAddEth.keys()}    
+    
     
     # Computing MEAN cell-based diff
     luEth = rasterToArray(luRaster)
@@ -1120,15 +1193,7 @@ if getCellBasedCarbonStock == 1:
         print ('end', time.asctime(time.localtime(time.time())))
         
     # Cell-based diffs
-    scInitial, scEth, scAddEth = carbParams.getScenariosType()
-    # Dividing input array in two dictionaries: 'Eth' and 'addEth' scenarios
-    #d_scEth = {k: np.asarray(
-        #v) for k, v in sorted(iteritems(dictio_totStockPerMCr)) if k in scCode_Eth}
-    #d_scAddEth = {k: np.asarray(
-        #v) for k, v in sorted(iteritems(dictio_totStockPerMCr)) if k in scCode_addEth}
-    ## Computing the subtraction: 'addEth' minus 'Eth' scenarios
-    #diff_totStockPerScPair = {
-        #k: d_scAddEth[k] - d_scEth.get(k - 2) for k in d_scAddEth.keys()}
+
     
     #for sc, scPath in sorted(iteritems(scenariosDict)):
     

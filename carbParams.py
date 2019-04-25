@@ -31,6 +31,7 @@ def getScenariosPaths(path, wildcard):
     """Return a dictionary of all the scenarios (keys) with the paths to access 
     LUC maps (values). The dictio includes the initial state (sc0 = year 2012)"""
     scenariosList = sorted(glob.glob(os.path.join(path, wildcard)))
+    print (scenariosList)
     scenariosDict = {
         int((scPath.split('sc'))[-1]): scPath for scPath in scenariosList}
     return scenariosDict
@@ -39,16 +40,16 @@ def getScenariosPaths(path, wildcard):
 def getMonteCarloSamples():
     """Return number of Monte Carlo samples. If nrMCsamples == 1, the script
     will run deterministically. If nrMCsamples > 1, then is stochastic."""
-    nrMCsamples = 10000
+    nrMCsamples = 1
     return nrMCsamples
 
 
 def configModelComponents():
     """Return the model components setup for sensitivity analysis: it returns 
     which component will run deterministically (0) or stochastically (1). """
-    SOC_component = 1
-    BC_component = 1
-    LUC_component = 1
+    SOC_component = 0
+    BC_component = 0
+    LUC_component = 0
     lst = [SOC_component, BC_component, LUC_component]
     if lst == [1, 0, 0]:
         runType = 'stcSOC'
@@ -128,7 +129,7 @@ def getStochasticLUmaps(scenario_path, pfMapping, wildcard):
         for nrLU in sorted(mappingSet.intersection(LUmapsDictSet)):
             nrRuns = pfMapping[nrLU]
             LUmap = LUmapsDict[nrLU]
-            #print nrLU, nrRuns, LUmap
+            #print (nrLU, nrRuns, LUmap)
             nrRuns_acc += nrRuns
             if nrRuns_acc in range(getMonteCarloSamples()):
                 nrRuns_mcRange += nrRuns
@@ -145,8 +146,8 @@ def getStochasticLUmaps(scenario_path, pfMapping, wildcard):
 def getDeterministicLUmap(scenario_path, pfMapping):
     highestWeight = max(pfMapping.keys(), key=(lambda k: pfMapping[k]))
     LUmap = os.path.join(scenario_path, '2030_{}.map'.format(highestWeight))
-    # print "Particle Filter: Highest weight between LU maps == code {} (weight\
-    # == {}, considering 10000 runs)".format(highestWeight, pfMapping[highestWeight])
+    # print ("Particle Filter: Highest weight between LU maps == code {} (weight\
+    # == {}, considering 10000 runs)".format(highestWeight, pfMapping[highestWeight]))
     return LUmap
 
 
@@ -172,8 +173,8 @@ def getScenariosType():
 
 
 def figureColors():
-    """1st => SOC; 2nd => BC"""
-    colors = ['#d8b365', '#5ab4ac']
+    """1st => SOC; 2nd => BC; 3rd => TC"""
+    colors = ['#d8b365', '#5ab4ac', '#b2c29d']
     return colors
 
 
