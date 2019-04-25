@@ -54,9 +54,9 @@ saveArrays4cb_stock = 0
 # the sensitivity analysis is only possible if you set saveArrays4ov_stock to 1 
 # in each of the runs!
 plotSensAnalysis = 0
-plotBoxplot = 0
-showPlots = 0
-savePlots = 0
+plotBoxplot = 1
+showPlots = 1
+savePlots = 1
 
 # Dictionary corresponding to the path for scenarios with LU maps,
 scenariosDict = carbParams.getScenariosPaths(opj('PLUC/results_stoch'), 'sc*')
@@ -403,10 +403,11 @@ def IPCCdet_getDiffStockPerPairScenarios():
     # Getting LUmaps used in Floor's paper 
     LUmaps_Path = opj('PLUC', 'results_det')
     LUscenarios = glob.glob(opj(LUmaps_Path , 'sc*'))
-    luMapsDict_det = {((lu_path.split('/sc'))[-1]):opj(lu_path, 'landUse0025.map') 
-                      for lu_path in sorted(LUscenarios)}
+    luMapsDict_det = {int(lu_path.split('/sc')[-1]):opj(lu_path, 'landUse0025.map') 
+                      for lu_path in sorted(LUscenarios)} # the int here makes the
+    # dictionary correctly sorted by the scenario number. If run in windows, 
+    # you might have to change the slash punctuation
     luMapsDict_det[0] = carbParams.getInitialLandUseMap()
-
     for sc, LUmapPath in sorted(iteritems(luMapsDict_det)):
         LUmap = rasterToArray(LUmapPath)
         clim_lu = (climate + LUmap)
@@ -977,16 +978,18 @@ def getCellBasedMeanStocks(csType, sc, saveToFile):
     #if not csType == 'soc' or csType == 'bc' or csType == 'tc':
         #raise Exception("csType argument set to '{}'. It must be 'soc', 'bc' or\
          #'tc'.".format(csType))
-    npzFiles = glob.glob(opj(resultsDir, 'arr_cellBased', 'cbStocks_sc{}mc*'.
+    npzFiles = glob.glob(opj(resultsDir, 'arr_cellBased', 'cb_sc{}mc*'.
                              format(sc)))
     npzFilesDict = {
         int((v.split('mc'))[-1].split('.')[0]): v for v in sorted(npzFiles)}
     # Computing total cell-based mean and per LU type
     cs_accum = createArr4cellBasedStocks(carbParams.referenceRaster())
     if sc == 0:
+        # Creating Mask
         LUmapPath = carbParams.getInitialLandUseMap()
         LUmap = rasterToArray(LUmapPath)
         mask = maskNoCarbonCells(LUmap)
+        # Starting computation
         for sample, fl in sorted(iteritems(npzFilesDict)):
             npData = np.load(fl)
             if csType == 'soc' or csType == 'bc':
@@ -1008,14 +1011,15 @@ def getCellBasedMeanStocks(csType, sc, saveToFile):
             scPath, particleFilter_mapping, '2030_*')
         for descr in sorted(LUmapsDict.items()):
             mapCode, mapPath, mapMCruns = descr[0], descr[1][0], descr[1][1]
+            # Creating LU mask
             LUmapPath = getLUmap(sc, scPath, mapPath)
             LUmap = rasterToArray(LUmapPath)
-            clim_lu = (climate + LUmap)
             mask = maskNoCarbonCells(LUmap)
-            # the MC range used to run the current LU map
+            # Getting the MC range to run the current LU map
             mcRange_curr = getLUmapMCrange(mapCode, mapMCruns, mcRun_acc)
             mcRun_acc += mapMCruns
             #print ('runs {}-{}'.format(min(mcRange_curr), max(mcRange_curr)))
+            # Starting computation
             for sample in mcRange_curr:
                 npData = np.load(npzFilesDict[sample])
                 if csType == 'soc' or csType == 'bc':
@@ -1046,16 +1050,18 @@ def getCellBasedStdStocks(csType, cellBased_mean, sc, saveToFile):
     #if not csType == 'soc' or csType == 'bc' or csType == 'tc':
         #raise Exception("csType argument set to '{}'. It must be 'soc', 'bc' or\
          #'tc'.".format(csType))
-    npzFiles = glob.glob(opj(resultsDir, 'arr_cellBased', 'cbStocks_sc{}mc*'.
+    npzFiles = glob.glob(opj(resultsDir, 'arr_cellBased', 'cb_sc{}mc*'.
                              format(sc)))
     npzFilesDict = {
         int((v.split('mc'))[-1].split('.')[0]): v for v in sorted(npzFiles)}
     # Computing total cell-based mean and per LU type
     cs_sqAccum = createArr4cellBasedStocks(carbParams.referenceRaster())
     if sc == 0:
+        # Creating mask 
         LUmapPath = carbParams.getInitialLandUseMap()
         LUmap = rasterToArray(LUmapPath)
         mask = maskNoCarbonCells(LUmap)
+        # Starting computation
         for sample, fl in sorted(iteritems(npzFilesDict)):
             npData = np.load(fl)
             if csType == 'soc' or csType == 'bc':
@@ -1079,14 +1085,15 @@ def getCellBasedStdStocks(csType, cellBased_mean, sc, saveToFile):
             scPath, particleFilter_mapping, '2030_*')
         for descr in sorted(LUmapsDict.items()):
             mapCode, mapPath, mapMCruns = descr[0], descr[1][0], descr[1][1]
+            # Creating mask 
             LUmapPath = getLUmap(sc, scPath, mapPath)
             LUmap = rasterToArray(LUmapPath)
-            clim_lu = (climate + LUmap)
             mask = maskNoCarbonCells(LUmap)
-            # the MC range used to run the current LU map
+            # Getting the MC range to run the current LU map
             mcRange_curr = getLUmapMCrange(mapCode, mapMCruns, mcRun_acc)
             mcRun_acc += mapMCruns
             #print ('runs {}-{}'.format(min(mcRange_curr), max(mcRange_curr)))
+            # Starting computation 
             for sample in mcRange_curr:
                 npData = np.load(npzFilesDict[sample])
                 if csType == 'soc' or csType == 'bc':
@@ -1112,106 +1119,161 @@ def getCellBasedStdStocks(csType, cellBased_mean, sc, saveToFile):
     arrayToMap(csStd_cell, saveToFile)
     return csStd_cell
 
-def getDiffCellBasedEth_cellStocks_analysis(scEth, csType, luRaster, inPath, saveTo):
+def getDiffCellBasedMeanStocks(csType, scEth, scAddEth, saveToFile):
     """ """
-    scInitial, scEth, scAddEth = carbParams.getScenariosType()
+    npzFilesEth = glob.glob(opj(resultsDir, 'arr_cellBased', 'cb_sc{}mc*'.
+                             format(scEth)))
     
-    ethFiles = [npFile for npFile in sorted(
-        glob.iglob(opj(inPath, "arrays_sc{}mc*".format(scEth))))]
-    ADDeEthFiles = [npFile for npFile in sorted(glob.iglob(
-        opj(inPath, "arrays_sc{}mc*".format(scEth - 1))))]
+    npzFilesAddEth = glob.glob(opj(resultsDir, 'arr_cellBased', 'cb_sc{}mc*'.
+                             format(scAddEth)))    
+    npzDictEth = {
+        int((v.split('mc'))[-1].split('.')[0]): v for v in sorted(npzFilesEth)}
+    npzDictAddEth = {
+        int((v.split('mc'))[-1].split('.')[0]): v for v in sorted(npzFilesAddEth)}    
+    # To confirm if arrays are sharing the same MCruun, use:
+    #for (k1, v1), (k2,v2) in zip(npzDictEth.iteritems(), npzDictAddEth.iteritems()):
+        #print (k1, k2,"-----", v1,v2)     
+    cs_accum = createArr4cellBasedStocks(carbParams.referenceRaster())
+    # set iterator of mcRuns (used to change the LUmap based on part. filter)
+    mcRun_acc = 0
+    LUmapsDict = carbParams.getStochasticLUmaps(scAddEthPath, particleFilter_mapping, '2030_*')
+    for descr in sorted(LUmapsDict.items()):
+        mapCode, mapPath, mapMCruns = descr[0], descr[1][0], descr[1][1]
+        # Creating mask of LU map regarding scenario w/ additional ethanol
+        LUmapPath = getLUmap(scAddEth, scAddEthPath, mapPath)
+        LUmap = rasterToArray(LUmapPath)
+        mask = maskNoCarbonCells(LUmap)
+        # the MC range used to run the current LU map
+        mcRange_curr = getLUmapMCrange(mapCode, mapMCruns, mcRun_acc)
+        mcRun_acc += mapMCruns
+        #print ('runs {}-{}'.format(min(mcRange_curr), max(mcRange_curr)))
+        #Starting computations
+        for sample in mcRange_curr:
+            npDataEth = np.load(npzDictEth[sample])
+            npDataAddEth = np.load(npzDictAddEth[sample])
+            if csType == 'soc' or csType == 'bc':
+                csEth = npDataEth[csType]
+                csAddEth = npDataAddEth[csType]
+            if csType == 'tc':
+                socEth = npDataEth['soc']
+                bcEth = npDataEth['bc']
+                csEth = socEth + bcEth
+                socAddEth = npDataAddEth['soc']
+                bcAddEth = npDataAddEth['bc']
+                csAddEth = socAddEth + bcAddEth            
+            csDiff = csAddEth - csEth
+            csDiff[mask.mask] = 0
+            cs_accum = csDiff + cs_accum                    
+            print ('\tDiff mean of {} ({} vs {}) - {}, {}, files {} & {} ...'.format(
+                csType, scAddEth, scEth, sample, LUmapPath, 
+                npzDictAddEth[sample].split("_")[-1], npzDictEth[sample].split("_")[-1]))
+            if np.isnan(cs_accum).any() == True:
+                print ('SC{} - NaN in cs_accum when summing {} with file {}'.
+                       format(sc, csType, npzDictAddEth[sample]))                    
+    csDiffMean_cell = (cs_accum / len(npzFilesAddEth))  # OK! (It has 0 values)
+    # Saving array 
+    np.save(opj(resultsDir, 'maps', saveToFile), csDiffMean_cell)
+    # Converting array to map and saving map
+    arrayToMap(csDiffMean_cell, saveToFile)
+    return csDiffMean_cell
     
+def getDiffCellBasedStdStocks(csType, scEth, scAddEth, csDiffMean_cell, saveToFile):
+    """ """
+    npzFilesEth = glob.glob(opj(resultsDir, 'arr_cellBased', 'cb_sc{}mc*'.
+                             format(scEth)))
     
-    npzFiles = glob.glob(opj(resultsDir, 'arr_cellBased', 'cbStocks_sc{}mc*'.
-                             format(sc)))
-    npzFilesDict = {
-        int((v.split('mc'))[-1].split('.')[0]): v for v in sorted(npzFiles)}    
+    npzFilesAddEth = glob.glob(opj(resultsDir, 'arr_cellBased', 'cb_sc{}mc*'.
+                             format(scAddEth)))    
+    npzDictEth = {
+        int((v.split('mc'))[-1].split('.')[0]): v for v in sorted(npzFilesEth)}
+    npzDictAddEth = {
+        int((v.split('mc'))[-1].split('.')[0]): v for v in sorted(npzFilesAddEth)}    
+    # To confirm if arrays are sharing the same MCruun, use:
+    #for (k1, v1), (k2,v2) in zip(npzDictEth.iteritems(), npzDictAddEth.iteritems()):
+        #print (k1, k2,"-----", v1,v2)     
+    cs_sqAccum = createArr4cellBasedStocks(carbParams.referenceRaster())
+    # set iterator of mcRuns (used to change the LUmap based on part. filter)
+    mcRun_acc = 0
+    LUmapsDict = carbParams.getStochasticLUmaps(scAddEthPath, particleFilter_mapping, '2030_*')
+    for descr in sorted(LUmapsDict.items()):
+        mapCode, mapPath, mapMCruns = descr[0], descr[1][0], descr[1][1]
+        # Creating mask of LU map regarding scenario w/ additional ethanol
+        LUmapPath = getLUmap(scAddEth, scAddEthPath, mapPath)
+        LUmap = rasterToArray(LUmapPath)
+        mask = maskNoCarbonCells(LUmap)
+        # the MC range used to run the current LU map
+        mcRange_curr = getLUmapMCrange(mapCode, mapMCruns, mcRun_acc)
+        mcRun_acc += mapMCruns
+        #print ('runs {}-{}'.format(min(mcRange_curr), max(mcRange_curr)))
+        #Starting computations
+        for sample in mcRange_curr:
+            npDataEth = np.load(npzDictEth[sample])
+            npDataAddEth = np.load(npzDictAddEth[sample])
+            if csType == 'soc' or csType == 'bc':
+                csEth = npDataEth[csType]
+                csAddEth = npDataAddEth[csType]
+            if csType == 'tc':
+                socEth = npDataEth['soc']
+                bcEth = npDataEth['bc']
+                csEth = socEth + bcEth
+                socAddEth = npDataAddEth['soc']
+                bcAddEth = npDataAddEth['bc']
+                csAddEth = socAddEth + bcAddEth            
+            csDiff = csAddEth - csEth
+            # mask to remove zero values when computing squares
+            maskDiff = (np.ma.masked_values(csDiff, 0))
+            sqDiff = (maskDiff - csDiffMean_cell) ** 2
+            cs_sqAccum = sqDiff + cs_sqAccum
+            print ('\tDiff std of {} ({} vs {}) - {}, {}, files {} & {} ...'.format(
+                csType, scAddEth, scEth, sample, LUmapPath, 
+                npzDictAddEth[sample].split("_")[-1], npzDictEth[sample].split("_")[-1]))
+            if np.isnan(cs_accum).any() == True:
+                print ('SC{} - NaN in cs_accum when summing {} with file {}'.
+                       format(sc, csType, npzDictAddEth[sample]))                    
+    csDiffStd_cell = np.sqrt(cs_sqAccum / len(npzFilesAddEth))
+    csDiffStd_cell = np.asarray(csDiffStd_cell)
+    # Saving array 
+    np.save(opj(resultsDir, 'maps', saveToFile), csDiffStd_cell)
+    # Converting array to map and saving map
+    arrayToMap(csDiffStd_cell, saveToFile)
+    return csDiffStd_cell    
     
-    # Dividing input array in two dictionaries: 'Eth' and 'addEth' scenarios
-    d_scEth = {k: np.asarray(v) for k, v in sorted(iteritems(dictio_totStockPerMCr)) if k in scCode_Eth}
-    d_scAddEth = {k: np.asarray(v) for k, v in sorted(iteritems(dictio_totStockPerMCr)) if k in scCode_addEth}
-    #Computing the subtraction: 'addEth' minus 'Eth' scenarios
-    #diff_totStockPerScPair = {
-        #k: d_scAddEth[k] - d_scEth.get(k - 2) for k in d_scAddEth.keys()}    
-    
-    
-    # Computing MEAN cell-based diff
-    luEth = rasterToArray(luRaster)
-    luNoEth = rasterToArray(luScenarios[(luScenarios.index(luRaster)) - 1])
-    luMask = np.ma.masked_where(((luEth <= 2) | (luEth == 10)), luEth)
-    acc_diff = np.zeros([885, 854], dtype=np.float64)
-    for mcRun_eth, mcRun_noEth in zip(ethFiles, noEthFiles):
-        csEth = np.load(mcRun_eth)[csType]
-        csNoEth = np.load(mcRun_noEth)[csType]
-        diff = csEth - csNoEth
-        acc_diff = diff + acc_diff
-        #print (mcRun_Eth.split("_")[4], 'mean', np.unique(acc_diff))
-        print (scEth, '- mean -', mcRun_eth.split("_")
-               [5], mcRun_noEth.split("_")[5], np.isnan(acc_diff).any())
-    mDiff = acc_diff / len(ethFiles)
-    # Computing STD cell-based diff
-    acc_sqDiff = np.zeros([885, 854], dtype=np.float64)
-    for mcRun_eth, mcRun_noEth in zip(ethFiles, noEthFiles):
-        csEth = np.load(mcRun_eth)[csType]
-        csNoEth = np.load(mcRun_noEth)[csType]
-        diff = csEth - csNoEth
-        # mask to remove zero values when computing squares
-        maskDiff = (np.ma.masked_values(diff, 0))
-        sqDiff = (maskDiff - mDiff)**2
-        acc_sqDiff = sqDiff + acc_sqDiff
-        print (scEth, '- std -', mcRun_eth.split("_")
-               [5], mcRun_noEth.split("_")[5], np.isnan(acc_diff).any())
-    stdDiff = np.sqrt(acc_sqDiff / len(ethFiles))
-    stdDiff = np.asarray(stdDiff)
-    stdDiff[luMask.mask] = 0
-    np.save(opj(saveTo, "dsc{}Xsc{}_mTC_cell".format(
-        scEth, scEth - 1)), mDiff.astype(np.float32))
-    np.save(opj(saveTo, "dSc{}Xsc{}_stdTC_Cell".format(
-        scEth, scEth - 1)), stdDiff.astype(np.float32))
-    return mDiff, stdDiff
-
 #------------     DATA PROCESSING (cell-based carbon stocks)     --------------#
 
 if getCellBasedCarbonStock == 1:
+    # OBS: to use all the 10.0000 saved cell-based arrays per scenario in the 
+    # cell-based functions, the  carbParams.nrMCsamples must be set to 10000 
+    # (I did not have time to make it more "flexible")
     LUC_comp = 1
-    for sc, scPath in sorted(iteritems(scenariosDict)):
-        print ('\nSC{} - computing cell-based carbon stocks (tonne C/ha)\t...\t\
-        Start time: {}'.format(sc, time.asctime(time.localtime(time.time()))))
-        # Getting mean & std mapsmaps
-        mSOC_cell = getCellBasedMeanStocks('soc', sc, 
-                            saveToFile = "sc{}_{}_mean".format(sc, 'SOC'))
-        stdSOC_cell = getCellBasedStdStocks('soc', mSOC_cell, sc, 
-                                saveToFile = "sc{}_{}_std".format(sc, 'SOC'))
-        mBC_cell = getCellBasedMeanStocks('bc', sc, 
-                                saveToFile = "sc{}_{}_mean".format(sc, 'BC'))
-        stdBC_cell = getCellBasedStdStocks('bc', mBC_cell, sc, 
-                                saveToFile = "sc{}_{}_std".format(sc, 'BC'))
-        mTC_cell = getCellBasedMeanStocks('tc', sc, 
-                                saveToFile = "sc{}_{}_mean".format(sc, 'TC'))
-        stdTC_cell = getCellBasedStdStocks('tc', mTC_cell, sc, 
-                                saveToFile = "sc{}_{}_std".format(sc, 'TC'))
-        print ('end', time.asctime(time.localtime(time.time())))
+    #for sc, scPath in sorted(iteritems(scenariosDict)):
+        #print ('\nSC{} - computing cell-based carbon stocks (tonne C/ha)\t...\t\
+        #Start time: {}'.format(sc, time.asctime(time.localtime(time.time()))))
+        ## Getting mean & std mapsmaps
+        #mSOC_cell = getCellBasedMeanStocks('soc', sc, 
+                            #saveToFile = "sc{}_{}_mean".format(sc, 'SOC'))
+        #stdSOC_cell = getCellBasedStdStocks('soc', mSOC_cell, sc, 
+                                #saveToFile = "sc{}_{}_std".format(sc, 'SOC'))
+        #mBC_cell = getCellBasedMeanStocks('bc', sc, 
+                                #saveToFile = "sc{}_{}_mean".format(sc, 'BC'))
+        #stdBC_cell = getCellBasedStdStocks('bc', mBC_cell, sc, 
+                                #saveToFile = "sc{}_{}_std".format(sc, 'BC'))
+        #mTC_cell = getCellBasedMeanStocks('tc', sc, 
+                                #saveToFile = "sc{}_{}_mean".format(sc, 'TC'))
+        #stdTC_cell = getCellBasedStdStocks('tc', mTC_cell, sc, 
+                                #saveToFile = "sc{}_{}_std".format(sc, 'TC'))
+        #print ('end', time.asctime(time.localtime(time.time())))
         
     # Cell-based diffs
+    scInitial, scEth, scAddEth = carbParams.getScenariosType()
+    scEthDict = {k: v for k, v in sorted(iteritems(scenariosDict)) if k in scEth}
+    scAddEthDict = {k: v for k, v in sorted(iteritems(scenariosDict)) if k in scAddEth}
+    for (scEth, scEthPath), (scAddEth, scAddEthPath) in zip(
+        sorted(iteritems(scEthDict)), sorted(iteritems(scAddEthDict))):
+        socDiffMean = getDiffCellBasedMeanStocks('soc', scEth, scAddEth, "sc{}_{}_diff_mean".format(scAddEth, 'SOC'))
+        socDiffStd = getDiffCellBasedStdStocks('soc', scEth, scAddEth, csDiffMean_cell, "sc{}_{}_diff_std".format(scAddEth, 'SOC'))
+        bcDiffMean = csgetDiffCellBasedMeanStocks('bc', scEth, scAddEth, "sc{}_{}_diff_mean".format(scAddEth, 'BC'))
+        bcDiffStd = getDiffCellBasedStdStocks('bc', scEth, scAddEth, csDiffMean_cell, "sc{}_{}_diff_std".format(scAddEth, 'BC'))
+        tcDiffMean = getDiffCellBasedMeanStocks('tc', scEth, scAddEth, "sc{}_{}_diff_mean".format(scAddEth, 'TC'))
+        tcDiffStd = getDiffCellBasedStdStocks('tc', scEth, scAddEth, csDiffMean_cell, "sc{}_{}_diff_std".format(scAddEth, 'TC'))
 
-    
-    #for sc, scPath in sorted(iteritems(scenariosDict)):
-    
-    #for sc, rLU in enumerate(luScenarios):
-        #if sc != 0:
-            ##print ("SC{}\t|\tGetting cell-based diff of stocks Vs 2012, per MCr...\n".format(sc))
-            ##diffInit_cellStocks_analysis(sc, "SOC", rLU, inPath=opj(tempDir, 'npz_arrays'), saveTo=outDir)
-            ##diffInit_cellStocks_analysis(sc, "BC", rLU, inPath=opj(tempDir, 'npz_arrays'), saveTo=outDir)
-            ##diffInit_cellStocks_analysis(sc, "TC", rLU, inPath=opj(tempDir, 'npz_arrays'), saveTo=outDir)
-            #if sc < 5 and sc % 2 == 0:
-                ## if sc % 2 == 0 and sc != 0: # to get scEth
-                #print (
-                    #"SC{}\t|\tGetting cell-based diff of stocks (Eth-noEth), per MCr...\n".format(sc))
-                ##diffEth_cellStocks_analysis(sc, "SOC", rLU, inPath=opj(tempDir, 'npz_arrays'), saveTo=outDir)
-                ##diffEth_cellStocks_analysis(sc, "BC", rLU, inPath=opj(tempDir, 'npz_arrays'), saveTo=outDir)
-                #diffEth_cellStocks_analysis(sc, "TC", rLU, inPath=opj(
-                    #tempDir, 'npz_arrays'), saveTo=outDir)
-            #print ("SC{}\t|\t processing took {:.2f} min\n".format(
-                #sc, float(time.time() - starttime) / 60))
-                
 print("Finished at: {}".format(time.asctime(time.localtime(time.time()))))

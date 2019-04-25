@@ -31,7 +31,6 @@ def getScenariosPaths(path, wildcard):
     """Return a dictionary of all the scenarios (keys) with the paths to access 
     LUC maps (values). The dictio includes the initial state (sc0 = year 2012)"""
     scenariosList = sorted(glob.glob(os.path.join(path, wildcard)))
-    print (scenariosList)
     scenariosDict = {
         int((scPath.split('sc'))[-1]): scPath for scPath in scenariosList}
     return scenariosDict
@@ -40,16 +39,16 @@ def getScenariosPaths(path, wildcard):
 def getMonteCarloSamples():
     """Return number of Monte Carlo samples. If nrMCsamples == 1, the script
     will run deterministically. If nrMCsamples > 1, then is stochastic."""
-    nrMCsamples = 1
+    nrMCsamples = 10000
     return nrMCsamples
 
 
 def configModelComponents():
     """Return the model components setup for sensitivity analysis: it returns 
     which component will run deterministically (0) or stochastically (1). """
-    SOC_component = 0
-    BC_component = 0
-    LUC_component = 0
+    SOC_component = 1
+    BC_component = 1
+    LUC_component = 1
     lst = [SOC_component, BC_component, LUC_component]
     if lst == [1, 0, 0]:
         runType = 'stcSOC'
