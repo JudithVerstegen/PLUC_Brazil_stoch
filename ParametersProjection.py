@@ -48,7 +48,7 @@ def getSampleInput(sampleNr, filename, landUseList = None):
                               filename + str(aName) + '.npy')
       array = np.load(fileName)
 ##      print(array.shape)
-##      print array
+##      print(array)
       # take from array:
       # timestep (final of calibration, sampleNr, x (y is nothing)
       parameter = array[-1, sampleNr - 1, :]
@@ -77,4 +77,16 @@ def getInitialLandUseMap(sampleNr):
     
 # test
 ##getInitialLandUseMap(1)
+##mapping = getMappingFromFile('particle_mapping.csv','New_ID', 'ID_MC5000_2012')
+##calibration_sample_nr = mapping.get(43)
+##print(calibration_sample_nr)
+
+##j = 4650
+##print(j)
 ##print(getNrSamplesFromFile('particle_mapping.csv'))
+##landUseList = getSampleInput(j, 'LUTypes')
+##print(landUseList)
+##weights = getSampleInput(j, 'weights', landUseList)
+##for i in weights.keys():
+##  print(i, weights[i])
+
