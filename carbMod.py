@@ -304,7 +304,7 @@ def getLUmapMCrange(nrLUmap, mcRuns_LUmap, mcRun_accumulated):
     mcRange = np.arange(mcRunToStart, mcRunToStop)
     return mcRange
 
-def getTotalSOCstock(climLu, climSoil, LUmask, SOC_comp):
+def getTotalSOCstock(climLu, climSoil, LUmask, SOC_comp, sample=None):
     """Returns the total SOC stock for a given land use map (soc == array with 
     total stock per cell, tSOC == sum of array). The outputs depend whether the 
     'SOC_comp' variable is set to run deterministically or stochastically. 
@@ -335,7 +335,7 @@ def getTotalSOCstock(climLu, climSoil, LUmask, SOC_comp):
     return soc, tSOC
 
 
-def getTotalBCstock(climLu, LUmask, BC_comp):
+def getTotalBCstock(climLu, LUmask, BC_comp, sample=None):
     """Returns the total biomass carbon stocks for a given land use map 
     (bc == array with total stock per cell, tBC == sum of array). 
     The outputs depend whether the 'BC_opjcomp' variable is set to run 
@@ -591,14 +591,21 @@ def saveData4statisticalTest(outFile):
 # Functions for plotting boxplot
 def setupBoxplot(boxplot, color):
     """Customize the boxplot built by plotBoxplot() function"""
-    plt.setp(boxplot['boxes'], facecolor=color,
+    if (len(color) == 1) or type(color) is str:
+        plt.setp(boxplot['boxes'], facecolor=color,
              edgecolor='#585858', linewidth=0.4, alpha=0.8)
+    else:
+        for patch, col in zip(boxplot['boxes'], color):
+            patch.set_facecolor(col)
+        plt.setp(boxplot['boxes'], edgecolor='#585858', linewidth=0.4, \
+                 alpha=0.8)
     plt.setp(boxplot['whiskers'], color='#848484',
              linewidth=0.6, linestyle="--")
     plt.setp(boxplot['caps'], color='#848484', linewidth=1)
-    plt.setp(boxplot['medians'], linewidth=1, color='#B40404', linestyle="-")
+    plt.setp(boxplot['medians'], linewidth=1, color='#848484', linestyle="-")
     plt.setp(boxplot['means'], linestyle="-", color='k',
              linewidth=1.6, marker="+", markersize=6)
+    
 
 
 def getBoxplot(socGHGe, bcGHGe, socGHGe_det, bcGHGe_det): # OBS: I  couldn't 
@@ -618,33 +625,43 @@ def getBoxplot(socGHGe, bcGHGe, socGHGe_det, bcGHGe_det): # OBS: I  couldn't
         bcGHGe_det = [v[0] for v in list(itervalues(bcGHGe_det))]
         # building boxplots
         socBoxes = plt.boxplot(socGHGe, positions=np.array(range(len(socGHGe)))
-                               * 2 + 0.4, sym='', usermedians=socGHGe_det, 
-                               meanline=True, showmeans=True, patch_artist=True, 
+                               * 2 + 0.4, sym='', #usermedians=socGHGe_det, 
+                               meanline=True, showmeans=False, patch_artist=True, 
                                widths=0.6)
         bcBoxes = plt.boxplot(bcGHGe, positions=np.array(range(len(bcGHGe))) 
-                              * 2 - 0.4, sym='', usermedians=bcGHGe_det, 
-                              meanline=True, showmeans=True, patch_artist=True, 
+                              * 2 - 0.4, sym='', #usermedians=bcGHGe_det, 
+                              meanline=True, showmeans=False, patch_artist=True, 
                               widths=0.6)
         # Customizing boxplots
         setupBoxplot(bcBoxes, colors[1])
         setupBoxplot(socBoxes, colors[0])
         ymin = int(np.max(np.stack((socGHGe, bcGHGe))) * -1)
         ymax = int(np.max(np.stack((socGHGe, bcGHGe))))
-        plt.yticks(np.arange(ymin, ymax + 1, step=5))
+        plt.yticks(np.arange(0, ymax + 1, step=10))
         plt.xticks(np.arange(0, len(socGHGe) * 2, 2), 
                    carbParams.getScenariosNames(), fontsize=8.5)
         plt.xlim(-1, len(socGHGe) * 2 - 1)
+        plt.ylim(0, ymax + 1)
         # Drawing bars and plots to use in legend
         plt.bar(1, [0], color=colors[0], label='SOC', alpha=0.80)
         plt.bar(1, [0], color=colors[1], label='Biomass', alpha=0.80)
-        plt.plot([], color='k', linewidth=2, marker="+",
-                 markersize=6, label='Mean - stochastic')
-        plt.plot([], [], marker="^", markerfacecolor='w', markeredgecolor="#c10202",
-                 markersize=8, color="w", label="Mean - deterministic")
-        plt.legend(fontsize=7, loc='upper right', frameon=True)
-        plt.grid(which="minor", axis='x', color='0.3', linewidth=0.15)
+        #plt.plot([], color='k', linewidth=2, marker="+",
+        #         markersize=6, label='Mean - stochastic')
+        ax.plot(np.array(range(len(socGHGe)))* 2 + 0.4, socGHGe_det,
+                 marker="^", markerfacecolor=colors[0],
+                 markeredgecolor='#848484', linestyle='None',
+                 markersize=8, color="w", label="Deterministic", zorder=99)
+        ax.plot(np.array(range(len(bcGHGe)))* 2 - 0.4, bcGHGe_det,
+                 marker="^", markerfacecolor=colors[1],
+                 markeredgecolor='#848484', linestyle='None',
+                 markersize=8, color="w", zorder=100)
+        handles, labels = ax.get_legend_handles_labels()
+        ax.legend(handles[::-1], labels[::-1], fontsize=10, loc='upper right')
+        #plt.legend(fontsize=7, loc='upper right', frameon=True)
+        ax.grid(which="minor", axis='x', color='#848484', linewidth=0.15)
         ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-        plt.ylabel('GHG emissions\n' + r'$gram$ $CO_2$-$eq$/$Mj$$_E$$_t$$_O$$_H$')
+        plt.ylabel('GHG emissions per component\n' +
+                   r'($gram$ $CO_2$-$eq$/$MJ$$_E$$_t$$_O$$_H$)')
         if savePlots == 1:
             plt.savefig(opj(resultsDir, 'plot_boxplot'), dpi=700)
         if showPlots == 1:
@@ -656,46 +673,65 @@ def getBoxplotThreshold(tcGHGe, tcGHGe_det):
     the five thresholds related to Directive EU 2018/2001 """
     if plotBoxplot == 1:
         plt.show()
-        fig, ax = plt.subplots(figsize=(8, 5))
-        colors = carbParams.figureColors()
         # Setting input data for boxplots (both stoch and det results  
         tcGHGe = list(itervalues(tcGHGe))
         tcGHGe_det = [v[0] for v in list(itervalues(tcGHGe_det))]
-        tcBoxes = plt.boxplot(tcGHGe, positions=np.array(range(len(tcGHGe))) 
-                              * 2, sym='', usermedians=tcGHGe_det, 
-                              meanline=True, showmeans=True, patch_artist=True, 
-                              widths=0.6)
-        # Customizing boxplots
-        setupBoxplot(tcBoxes, colors[-1])
-        ymin = int(np.max(tcGHGe)) * -1
-        ymax = int(np.max(tcGHGe))
-        plt.yticks(np.arange(ymin, ymax + 1, step=5))
-        plt.xticks(np.arange(0, len(tcGHGe) * 2, 2), 
-                   carbParams.getScenariosNames(), fontsize=8.5)
-        plt.xlim(-1, len(tcGHGe) * 2 - 1)
-        # Drawing bars and plots to use in legend
-        #plt.bar(1, [0], color=colors[-1], label='', alpha=0.80)
-        plt.plot([], color='k', linewidth=2, marker="+",
-                 markersize=6, label='Mean - stochastic')
-        plt.plot([], [], marker="^", markerfacecolor='w', markeredgecolor="#c10202",
-                 markersize=8, color="w", label="Mean - deterministic")
+
+        
         # The five thresholds based on (EU) 2018/2001 (as percentage)
-        thresholds = [0.5, 0.6, 0.65, 0.7, 0.8]
-        colors = ['#c7e9b4', '#7fcdbb', '#41b6c4', '#1d91c0', '#0c2c84']        
-        labels = ['50 % threshold', '60 % threshold', 
-                  '65 % threshold', '70 % threshold', '80 % threshold']
+        percent = np.array([0.8])#[0.5, 0.6, 0.65, 0.7, 0.8]
+        threshold_colors = ['k']#['#c7e9b4', '#7fcdbb', '#41b6c4', '#1d91c0', '#0c2c84']        
+        labels = ['threshold RED (80%)']#['50 % threshold', '60 % threshold', 
+                  #'65 % threshold', '70 % threshold', '80 % threshold']
         #  Assumed Life cycle GHG emissions of eth. prod. from sugar cane in BRA
         SC_emissions = 20 # gram CO2-eq/MJ
         # Assumed default GHG emissions from gasoline 
         GSLN_emissions = 94 # gram CO2-eq/MJ
+        threshold = (GSLN_emissions*(1-percent))
+        # Create figure
+        fig, ax = plt.subplots(figsize=(8, 5))
+        # New: color based on above/below threshold
+        ##colors = carbParams.figureColors()
+        upper = np.percentile(np.array(tcGHGe), 97.5, axis=1)
+        lower = np.percentile(np.array(tcGHGe), 2.5, axis=1)
+        colors = np.where(upper < threshold, 'green', '0')
+        colors = np.where(lower > threshold, 'red', colors)
+        colors = np.where(colors == '0', 'orange', colors)
+        # Box plots
+        tcBoxes = ax.boxplot(tcGHGe, positions=np.array(range(len(tcGHGe))) 
+                              * 2, sym='', #usermedians=tcGHGe_det, 
+                              meanline=True, showmeans=False, patch_artist=True, 
+                              widths=0.6)
+
+        # Customizing boxplots, using previously defined colors
+        setupBoxplot(tcBoxes, colors)
+        ymin = int(np.max(tcGHGe)) * -1
+        ymax = int(np.max(tcGHGe))
+        plt.yticks(np.arange(0, ymax + 1, step=10))
+        plt.xticks(np.arange(0, len(tcGHGe) * 2, 2), 
+                   carbParams.getScenariosNames(), fontsize=8.5)
+        plt.xlim(-1, len(tcGHGe) * 2 - 1)
+        plt.ylim(0, ymax + 1)
+        # Drawing bars and plots to use in legend
+        #plt.bar(1, [0], color=colors[-1], label='', alpha=0.80)
+        #ax.plot([], color='k', linewidth=2, marker="+",
+        #         markersize=6, label='Mean - stochastic')
+        ax.plot(np.array(range(len(tcGHGe)))* 2, tcGHGe_det, marker="^", \
+                markerfacecolor='w', markeredgecolor='#848484', linestyle='None', \
+                markersize=8, label="Deterministic", zorder=99)
+        
         # Adding thresholds in plot 
-        for percent, color, label in zip(thresholds, colors, labels):
-            plt.axhline(y=(GSLN_emissions*(1-percent)), linewidth = 0.9, 
-                        linestyle = '--', color = color, label = label)
-        plt.legend(fontsize=7, loc='upper right', frameon=True)
-        plt.grid(which="minor", axis='x', color='0.3', linewidth=0.15)
+        for threshold, color, label in zip(threshold, threshold_colors, labels):
+            ax.axhline(y=threshold, linewidth = 0.9, 
+                        linestyle = '--', color = color, label = label,
+                       zorder=100)
+
+        handles, labels = ax.get_legend_handles_labels()
+        ax.legend(handles[::-1], labels[::-1], fontsize=10, loc='upper right')
+        #plt.legend(fontsize=7, loc='upper right', frameon=True)
+        plt.grid(which="minor", axis='x', color='#848484', linewidth=0.15)
         ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-        plt.ylabel('GHG emissions\n' + r'$gram$ $CO_2$-$eq$/$Mj$$_E$$_t$$_O$$_H$')
+        plt.ylabel('total GHG emissions\n' + r'($gram$ $CO_2$-$eq$/$MJ$$_E$$_t$$_O$$_H$)')
         if savePlots == 1:
             plt.savefig(opj(resultsDir, 'plot_boxplot_threshold'), dpi=700)
         if showPlots == 1:
@@ -859,8 +895,10 @@ if getOverallCarbonStock == 1:
             clim_lu = (climate + LUmap)
             for sample in range(1, nrMCsamples + 1):
                 # Computing total stocks in the study area
-                soc, tSOC = getTotalSOCstock(clim_lu, clim_soil, mask, SOC_comp)
-                bc, tBC = getTotalBCstock(clim_lu, mask, BC_comp)
+                soc, tSOC = getTotalSOCstock(clim_lu, clim_soil, mask, SOC_comp,
+                                             int(sample))
+                bc, tBC = getTotalBCstock(clim_lu, mask, BC_comp,
+                                          int(sample))
                 tC = getTotalStock(tSOC, tBC)
                 # Appending totals to list
                 d_tSOCperMCr[sc].append(tSOC)
@@ -885,6 +923,7 @@ if getOverallCarbonStock == 1:
                 mask = maskNoCarbonCells(LUmap)
                 # the MC range used to run the current LU map
                 mcRange_curr = getLUmapMCrange(mapCode, mapMCruns, mcRun_acc)
+                print(mcRange_curr)
                 mcRun_acc += mapMCruns
                 print ('\n\tLUmap nr {} (stoch): {}\t|\tsamples: {} (runs {}-{})\n'.
                        format(mapCode, LUmapPath.split("ts/")[-1], mapMCruns, 
@@ -892,8 +931,8 @@ if getOverallCarbonStock == 1:
                 for sample in mcRange_curr:
                     # Computing total stocks in the study area
                     soc, tSOC = getTotalSOCstock(
-                        clim_lu, clim_soil, mask, SOC_comp)
-                    bc, tBC = getTotalBCstock(clim_lu, mask, BC_comp)
+                        clim_lu, clim_soil, mask, SOC_comp, int(sample))
+                    bc, tBC = getTotalBCstock(clim_lu, mask, BC_comp, int(sample))
                     tC = getTotalStock(tSOC, tBC)
                     # Appending totals to list
                     d_tSOCperMCr[sc].append(tSOC)

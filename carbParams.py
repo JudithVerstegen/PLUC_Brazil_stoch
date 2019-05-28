@@ -39,7 +39,7 @@ def getScenariosPaths(path, wildcard):
 def getMonteCarloSamples():
     """Return number of Monte Carlo samples. If nrMCsamples == 1, the script
     will run deterministically. If nrMCsamples > 1, then is stochastic."""
-    nrMCsamples = 100#10000
+    nrMCsamples = 10000
     return nrMCsamples
 
 
@@ -179,8 +179,8 @@ def figureColors():
 
 def getScenariosNames():
     """Return list of scenarios  with name."""
-    scenariosNames = ['No measures', 'High prod.', '2nd gen. SC',
-                      '2nd gen. EU', 'Cons. policies', 'All measures']
+    scenariosNames = ['BAU', 'High prod.', 'SC 2nd gen.',
+                      'EU 2nd gen.', 'Strict cons.', 'All comb.']
     return scenariosNames
 
 
