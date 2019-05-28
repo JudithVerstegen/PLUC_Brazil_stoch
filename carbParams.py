@@ -39,7 +39,7 @@ def getScenariosPaths(path, wildcard):
 def getMonteCarloSamples():
     """Return number of Monte Carlo samples. If nrMCsamples == 1, the script
     will run deterministically. If nrMCsamples > 1, then is stochastic."""
-    nrMCsamples = 10000
+    nrMCsamples = 100#10000
     return nrMCsamples
 
 

@@ -37,8 +37,8 @@ modelRunType, SOC_comp, BC_comp, LUC_comp = carbParams.configModelComponents()
 # Model configuration (you must turn on/turn off, depending of which part you 
 # want to run 
 generateRandomValues = 0
-getOverallCarbonStock = 0
-getCellBasedCarbonStock = 1
+getOverallCarbonStock = 1
+getCellBasedCarbonStock = 0
 
 # Defining if you want to save arrays. For overall carbon stocks: used to save the 
 # arrays w/ the sum of CStocks per MCr. If 1, the arrays will be saved regardless 
@@ -59,7 +59,8 @@ showPlots = 1
 savePlots = 1
 
 # Dictionary corresponding to the path for scenarios with LU maps,
-scenariosDict = carbParams.getScenariosPaths(opj('PLUC/results_stoch'), 'sc*')
+scenariosDict = carbParams.getScenariosPaths(opj(os.path.join('PLUC', \
+                                                'results_stoch')), 'sc*')
 # Adding the deterministic initial LU map to scenariosDict (k = 0, v = LU path)
 scenariosDict[0] = carbParams.getInitialLandUseMap()
 
@@ -403,7 +404,7 @@ def IPCCdet_getDiffStockPerPairScenarios():
     # Getting LUmaps used in Floor's paper 
     LUmaps_Path = opj('PLUC', 'results_det')
     LUscenarios = glob.glob(opj(LUmaps_Path , 'sc*'))
-    luMapsDict_det = {int(lu_path.split('/sc')[-1]):opj(lu_path, 'landUse0025.map') 
+    luMapsDict_det = {int(lu_path.split('sc')[-1]):opj(lu_path, 'landUse0025.map') 
                       for lu_path in sorted(LUscenarios)} # the int here makes the
     # dictionary correctly sorted by the scenario number. If run in windows, 
     # you might have to change the slash punctuation
