@@ -9,6 +9,7 @@ import gdal
 import osr
 import glob
 import os
+import math
 import numpy as np
 import pandas as pd
 import carbParams
@@ -37,7 +38,7 @@ modelRunType, SOC_comp, BC_comp, LUC_comp = carbParams.configModelComponents()
 # Model configuration (you must turn on/turn off, depending of which part you 
 # want to run 
 generateRandomValues = 0
-getOverallCarbonStock = 1
+getOverallCarbonStock = 0
 getCellBasedCarbonStock = 0
 
 # Defining if you want to save arrays. For overall carbon stocks: used to save the 
@@ -55,7 +56,7 @@ saveArrays4cb_stock = 0
 # in each of the runs!
 plotSensAnalysis = 0
 plotBoxplot = 1
-showPlots = 1
+showPlots = 0
 savePlots = 1
 
 # Dictionary corresponding to the path for scenarios with LU maps,
@@ -458,6 +459,8 @@ def getStats_OverallCarbonStock(statsType, outFile=""):
         for sc, arr in sorted(iteritems(dictio)): # arr = array w/ overall stocks per MCrun
             mean = np.mean(arr)
             median = np.median(arr)
+            mins = np.min(arr)
+            maxs = np.max(arr)
             std = np.std(arr)
             var = np.var(arr)
             percLow = np.percentile(arr, 2.5)
@@ -466,7 +469,9 @@ def getStats_OverallCarbonStock(statsType, outFile=""):
             uncLow = ((mean - percLow) / mean) * 100
             uncHigh = ((percHigh - mean) / mean) * 100
             toSave = {'{}mean'.format(stockType): round(mean, 2), 
-                      '{}median'.format(stockType): round(median, 2), 
+                      '{}median'.format(stockType): round(median, 2),
+                      '{}min'.format(stockType): round(mins, 2),
+                      '{}max'.format(stockType): round(maxs, 2),
                       '{}std'.format(stockType): round(std, 2), 
                       '{}var'.format(stockType): round(var, 2), 
                       '{}percLow'.format(stockType): round(percLow, 2), 
@@ -550,6 +555,10 @@ def getEmissionsDueToEthanol(dictio_diffSOC, dictio_diffBC, dictio_diffTC,
                 array_FinalUnit = array_Eth * -1 * 1000
                 mean = np.mean(array_FinalUnit)
                 meanToDict = {'{}mean'.format(stockType): round(mean, 2)}
+                mins = np.min(array_FinalUnit)
+                meanToDict.update({'{}min'.format(stockType): round(mins, 2)})
+                maxs = np.max(array_FinalUnit)
+                meanToDict.update({'{}max'.format(stockType): round(maxs, 2)})
                 if stockType == 'SOC':
                     SOC_ghgDueToEth[k1] = array_FinalUnit
                     ghgDueToEth_mean[k1] = meanToDict
@@ -615,7 +624,7 @@ def getBoxplot(socGHGe, bcGHGe, socGHGe_det, bcGHGe_det): # OBS: I  couldn't
     """Create a boxplot of SOC/BC GHG emissions due to ethanol increase between 
     scenarios with eth ('eth')and with additional eth ('addEth')."""
     if plotBoxplot == 1:
-        plt.show()
+        #plt.show()
         fig, ax = plt.subplots(figsize=(8, 5))
         colors = carbParams.figureColors()
         # Setting input data for boxplots (both stoch and det results  
@@ -625,7 +634,7 @@ def getBoxplot(socGHGe, bcGHGe, socGHGe_det, bcGHGe_det): # OBS: I  couldn't
         bcGHGe_det = [v[0] for v in list(itervalues(bcGHGe_det))]
         # building boxplots
         socBoxes = plt.boxplot(socGHGe, positions=np.array(range(len(socGHGe)))
-                               * 2 + 0.4, sym='', #usermedians=socGHGe_det, 
+                               * 2 + 0.4, sym='', whis='range',#usermedians=socGHGe_det, 
                                meanline=True, showmeans=False, patch_artist=True, 
                                widths=0.6)
         bcBoxes = plt.boxplot(bcGHGe, positions=np.array(range(len(bcGHGe))) 
@@ -635,13 +644,14 @@ def getBoxplot(socGHGe, bcGHGe, socGHGe_det, bcGHGe_det): # OBS: I  couldn't
         # Customizing boxplots
         setupBoxplot(bcBoxes, colors[1])
         setupBoxplot(socBoxes, colors[0])
-        ymin = int(np.max(np.stack((socGHGe, bcGHGe))) * -1)
+        ##ymin = int(np.max(np.stack((socGHGe, bcGHGe))) * -1)
+        ymin = math.floor(np.min(np.stack((socGHGe, bcGHGe)))/10)*10
         ymax = int(np.max(np.stack((socGHGe, bcGHGe))))
-        plt.yticks(np.arange(0, ymax + 1, step=10))
+        plt.yticks(np.arange(ymin, ymax + 1, step=10))
         plt.xticks(np.arange(0, len(socGHGe) * 2, 2), 
                    carbParams.getScenariosNames(), fontsize=8.5)
         plt.xlim(-1, len(socGHGe) * 2 - 1)
-        plt.ylim(0, ymax + 1)
+        plt.ylim(ymin, ymax + 5)
         # Drawing bars and plots to use in legend
         plt.bar(1, [0], color=colors[0], label='SOC', alpha=0.80)
         plt.bar(1, [0], color=colors[1], label='Biomass', alpha=0.80)
@@ -656,14 +666,16 @@ def getBoxplot(socGHGe, bcGHGe, socGHGe_det, bcGHGe_det): # OBS: I  couldn't
                  markeredgecolor='#848484', linestyle='None',
                  markersize=8, color="w", zorder=100)
         handles, labels = ax.get_legend_handles_labels()
-        ax.legend(handles[::-1], labels[::-1], fontsize=10, loc='upper right')
+        ax.legend(handles[::-1], labels[::-1], fontsize=10, loc='upper center')
         #plt.legend(fontsize=7, loc='upper right', frameon=True)
         ax.grid(which="minor", axis='x', color='#848484', linewidth=0.15)
         ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+        plt.xlabel('scenario')
         plt.ylabel('GHG emissions per component\n' +
                    r'($gram$ $CO_2$-$eq$/$MJ$$_E$$_t$$_O$$_H$)')
         if savePlots == 1:
             plt.savefig(opj(resultsDir, 'plot_boxplot'), dpi=700)
+            plt.savefig(opj(resultsDir, 'plot_boxplot.pdf'))
         if showPlots == 1:
             plt.show()
 
@@ -672,16 +684,16 @@ def getBoxplotThreshold(tcGHGe, tcGHGe_det):
     scenarios with eth ('eth') and with additional eth ('addEth'). Also, includes
     the five thresholds related to Directive EU 2018/2001 """
     if plotBoxplot == 1:
-        plt.show()
+        #plt.show()
         # Setting input data for boxplots (both stoch and det results  
         tcGHGe = list(itervalues(tcGHGe))
         tcGHGe_det = [v[0] for v in list(itervalues(tcGHGe_det))]
 
         
         # The five thresholds based on (EU) 2018/2001 (as percentage)
-        percent = np.array([0.8])#[0.5, 0.6, 0.65, 0.7, 0.8]
+        percent = np.array([0.65])#[0.5, 0.6, 0.65, 0.7, 0.8]
         threshold_colors = ['k']#['#c7e9b4', '#7fcdbb', '#41b6c4', '#1d91c0', '#0c2c84']        
-        labels = ['threshold RED (80%)']#['50 % threshold', '60 % threshold', 
+        labels = ['threshold RED ' + (str(int(i * 100)) + '%') for i in percent]#['50 % threshold', '60 % threshold', 
                   #'65 % threshold', '70 % threshold', '80 % threshold']
         #  Assumed Life cycle GHG emissions of eth. prod. from sugar cane in BRA
         SC_emissions = 20 # gram CO2-eq/MJ
@@ -699,19 +711,20 @@ def getBoxplotThreshold(tcGHGe, tcGHGe_det):
         colors = np.where(colors == '0', 'orange', colors)
         # Box plots
         tcBoxes = ax.boxplot(tcGHGe, positions=np.array(range(len(tcGHGe))) 
-                              * 2, sym='', #usermedians=tcGHGe_det, 
+                              * 2, sym='', whis='range',#usermedians=tcGHGe_det, 
                               meanline=True, showmeans=False, patch_artist=True, 
                               widths=0.6)
 
         # Customizing boxplots, using previously defined colors
         setupBoxplot(tcBoxes, colors)
-        ymin = int(np.max(tcGHGe)) * -1
+        ##ymin = int(np.max(tcGHGe)) * -1
+        ymin = math.floor(np.min(tcGHGe)/10)*10
         ymax = int(np.max(tcGHGe))
-        plt.yticks(np.arange(0, ymax + 1, step=10))
+        plt.yticks(np.arange(ymin, ymax + 1, step=10))
         plt.xticks(np.arange(0, len(tcGHGe) * 2, 2), 
                    carbParams.getScenariosNames(), fontsize=8.5)
         plt.xlim(-1, len(tcGHGe) * 2 - 1)
-        plt.ylim(0, ymax + 1)
+        plt.ylim(ymin, ymax + 5)
         # Drawing bars and plots to use in legend
         #plt.bar(1, [0], color=colors[-1], label='', alpha=0.80)
         #ax.plot([], color='k', linewidth=2, marker="+",
@@ -731,9 +744,11 @@ def getBoxplotThreshold(tcGHGe, tcGHGe_det):
         #plt.legend(fontsize=7, loc='upper right', frameon=True)
         plt.grid(which="minor", axis='x', color='#848484', linewidth=0.15)
         ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+        plt.xlabel('scenario')
         plt.ylabel('total GHG emissions\n' + r'($gram$ $CO_2$-$eq$/$MJ$$_E$$_t$$_O$$_H$)')
         if savePlots == 1:
             plt.savefig(opj(resultsDir, 'plot_boxplot_threshold'), dpi=700)
+            plt.savefig(opj(resultsDir, 'plot_boxplot_threshold.pdf'))
         if showPlots == 1:
             plt.show()
 
@@ -923,7 +938,6 @@ if getOverallCarbonStock == 1:
                 mask = maskNoCarbonCells(LUmap)
                 # the MC range used to run the current LU map
                 mcRange_curr = getLUmapMCrange(mapCode, mapMCruns, mcRun_acc)
-                print(mcRange_curr)
                 mcRun_acc += mapMCruns
                 print ('\n\tLUmap nr {} (stoch): {}\t|\tsamples: {} (runs {}-{})\n'.
                        format(mapCode, LUmapPath.split("ts/")[-1], mapMCruns, 
