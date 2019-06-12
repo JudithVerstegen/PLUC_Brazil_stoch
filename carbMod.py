@@ -16,6 +16,7 @@ import carbParams
 import scipy.stats as ss
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
+from matplotlib.patches import Patch
 from os.path import join as opj
 from six import iteritems, itervalues
 
@@ -39,14 +40,14 @@ modelRunType, SOC_comp, BC_comp, LUC_comp = carbParams.configModelComponents()
 # want to run 
 generateRandomValues = 0
 getOverallCarbonStock = 0
-getCellBasedCarbonStock = 1
+getCellBasedCarbonStock = 0
 
 # Defining if you want to save arrays. For overall carbon stocks: used to save the 
 # arrays w/ the sum of CStocks per MCr. If 1, the arrays will be saved regardless 
 # the 'modelRunType' setup. For cell based stocks: the model is set to just save
 # if 'modelRunType' = 'stcAll' (full stochastic), to use in cell-based computations)
 saveArrays4ov_stock = 0
-saveArrays4cb_stock = 1
+saveArrays4cb_stock = 0
 
 # Setup to plot/show/save figures...
 # OBS: For sensitivity analysis, you must run the model four times: For each time,
@@ -555,6 +556,8 @@ def getEmissionsDueToEthanol(dictio_diffSOC, dictio_diffBC, dictio_diffTC,
                 array_FinalUnit = array_Eth * -1 * 1000
                 mean = np.mean(array_FinalUnit)
                 meanToDict = {'{}mean'.format(stockType): round(mean, 2)}
+                median = np.median(array_FinalUnit)
+                meanToDict = {'{}median'.format(stockType): round(median, 2)}
                 mins = np.min(array_FinalUnit)
                 meanToDict.update({'{}min'.format(stockType): round(mins, 2)})
                 maxs = np.max(array_FinalUnit)
@@ -653,8 +656,10 @@ def getBoxplot(socGHGe, bcGHGe, socGHGe_det, bcGHGe_det): # OBS: I  couldn't
         plt.xlim(-1, len(socGHGe) * 2 - 1)
         plt.ylim(ymin, ymax + 5)
         # Drawing bars and plots to use in legend
-        plt.bar(1, [0], color=colors[0], label='SOC', alpha=0.80)
-        plt.bar(1, [0], color=colors[1], label='biomass', alpha=0.80)
+        plt.bar(1, [0], color=colors[0], label='Soil Organic Carbon (SOC)', \
+                alpha=0.80)
+        plt.bar(1, [0], color=colors[1], label='Biomass Carbon Stocks (BCS)', \
+                alpha=0.80)
         #plt.plot([], color='k', linewidth=2, marker="+",
         #         markersize=6, label='Mean - stochastic')
         ax.plot(np.array(range(len(socGHGe)))* 2 + 0.4, socGHGe_det,
@@ -693,7 +698,7 @@ def getBoxplotThreshold(tcGHGe, tcGHGe_det):
         # The five thresholds based on (EU) 2018/2001 (as percentage)
         percent = np.array([0.65])#[0.5, 0.6, 0.65, 0.7, 0.8]
         threshold_colors = ['k']#['#c7e9b4', '#7fcdbb', '#41b6c4', '#1d91c0', '#0c2c84']        
-        labels = ['threshold RED ' + (str(int(i * 100)) + '%') for i in percent]#['50 % threshold', '60 % threshold', 
+        labels = ['threshold REDII ']# + (str(int(i * 100)) + '%') for i in percent]#['50 % threshold', '60 % threshold', 
                   #'65 % threshold', '70 % threshold', '80 % threshold']
         #  Assumed Life cycle GHG emissions of eth. prod. from sugar cane in BRA
         SC_emissions = 20 # gram CO2-eq/MJ
@@ -740,7 +745,19 @@ def getBoxplotThreshold(tcGHGe, tcGHGe_det):
                        zorder=100)
 
         handles, labels = ax.get_legend_handles_labels()
-        ax.legend(handles[::-1], labels[::-1], fontsize=10, loc='upper center')
+        handles = handles[::-1]
+        labels = labels[::-1]
+        # append legend for colors
+        handles[0:0] = [Patch(facecolor='green', edgecolor='#848484')]
+        labels[0:0] = ['certainly below']
+        handles[0:0] = [Patch(facecolor='orange', edgecolor='#848484')]
+        labels[0:0] = ['not distinguishable']
+        handles[0:0] = [Patch(facecolor='red', edgecolor='#848484')]
+        labels[0:0] = ['certainly above']
+        ##handles[0:0] = [Patch(facecolor='None', edgecolor='None')]
+        ##labels[0:0] = ['Position relative to threshold:']
+        ax.legend(handles, labels, fontsize=10, loc='upper center', \
+                  title='Position relative to threshold:')
         #plt.legend(fontsize=7, loc='upper right', frameon=True)
         plt.grid(which="minor", axis='x', color='#848484', linewidth=0.15)
         ax.xaxis.set_minor_locator(AutoMinorLocator(2))
@@ -1184,6 +1201,7 @@ def getDiffCellBasedMeanStocks(csType, scEth, scAddEth, saveToFile):
                              format(scAddEth)))    
     npzDictEth = {
         int((v.split('mc'))[-1].split('.')[0]): v for v in sorted(npzFilesEth)}
+    print(npzDictEth)
     npzDictAddEth = {
         int((v.split('mc'))[-1].split('.')[0]): v for v in sorted(npzFilesAddEth)}    
     # To confirm if arrays are sharing the same MCruun, use:
@@ -1205,6 +1223,7 @@ def getDiffCellBasedMeanStocks(csType, scEth, scAddEth, saveToFile):
         print ('runs {}-{}'.format(min(mcRange_curr), max(mcRange_curr)))
         #Starting computations
         for sample in mcRange_curr:
+            sample = int(sample)
             npDataEth = np.load(npzDictEth[sample])
             npDataAddEth = np.load(npzDictAddEth[sample])
             if csType == 'soc' or csType == 'bc':
@@ -1283,8 +1302,8 @@ def getDiffCellBasedStdStocks(csType, scEth, scAddEth, csDiffMean_cell, saveToFi
             print ('\tDiff std of {} ({} vs {}) - {}, {}, files {} & {} ...'.format(
                 csType, scAddEth, scEth, sample, LUmapPath, 
                 npzDictAddEth[sample].split("_")[-1], npzDictEth[sample].split("_")[-1]))
-            if np.isnan(cs_accum).any() == True:
-                print ('SC{} - NaN in cs_accum when summing {} with file {}'.
+            if np.isnan(cs_sqAccum).any() == True:
+                print ('SC{} - NaN in cs_sqAccum when summing {} with file {}'.
                        format(sc, csType, npzDictAddEth[sample]))                    
     csDiffStd_cell = np.sqrt(cs_sqAccum / len(npzFilesAddEth))
     csDiffStd_cell = np.asarray(csDiffStd_cell)
@@ -1300,24 +1319,24 @@ if getCellBasedCarbonStock == 1:
     # OBS: to use all the 10.0000 saved cell-based arrays per scenario in the 
     # cell-based functions, the  carbParams.nrMCsamples must be set to 10000 
     # (I did not have time to make it more "flexible")
-    LUC_comp = 1
-    #for sc, scPath in sorted(iteritems(scenariosDict)):
-        #print ('\nSC{} - computing cell-based carbon stocks (tonne C/ha)\t...\t\
-        #Start time: {}'.format(sc, time.asctime(time.localtime(time.time()))))
-        ## Getting mean & std mapsmaps
-        #mSOC_cell = getCellBasedMeanStocks('soc', sc, 
-                            #saveToFile = "sc{}_{}_mean".format(sc, 'SOC'))
-        #stdSOC_cell = getCellBasedStdStocks('soc', mSOC_cell, sc, 
-                                #saveToFile = "sc{}_{}_std".format(sc, 'SOC'))
-        #mBC_cell = getCellBasedMeanStocks('bc', sc, 
-                                #saveToFile = "sc{}_{}_mean".format(sc, 'BC'))
-        #stdBC_cell = getCellBasedStdStocks('bc', mBC_cell, sc, 
-                                #saveToFile = "sc{}_{}_std".format(sc, 'BC'))
-        #mTC_cell = getCellBasedMeanStocks('tc', sc, 
-                                #saveToFile = "sc{}_{}_mean".format(sc, 'TC'))
-        #stdTC_cell = getCellBasedStdStocks('tc', mTC_cell, sc, 
-                                #saveToFile = "sc{}_{}_std".format(sc, 'TC'))
-        #print ('end', time.asctime(time.localtime(time.time())))
+##    LUC_comp = 1
+##    for sc, scPath in sorted(iteritems(scenariosDict)):
+##        print ('\nSC{} - computing cell-based carbon stocks (tonne C/ha)\t...\t\
+##        Start time: {}'.format(sc, time.asctime(time.localtime(time.time()))))
+##        # Getting mean & std mapsmaps
+##        mSOC_cell = getCellBasedMeanStocks('soc', sc, 
+##                            saveToFile = "sc{}_{}_mean".format(sc, 'SOC'))
+##        stdSOC_cell = getCellBasedStdStocks('soc', mSOC_cell, sc, 
+##                                saveToFile = "sc{}_{}_std".format(sc, 'SOC'))
+##        mBC_cell = getCellBasedMeanStocks('bc', sc, 
+##                                saveToFile = "sc{}_{}_mean".format(sc, 'BC'))
+##        stdBC_cell = getCellBasedStdStocks('bc', mBC_cell, sc, 
+##                                saveToFile = "sc{}_{}_std".format(sc, 'BC'))
+##        mTC_cell = getCellBasedMeanStocks('tc', sc, 
+##                                saveToFile = "sc{}_{}_mean".format(sc, 'TC'))
+##        stdTC_cell = getCellBasedStdStocks('tc', mTC_cell, sc, 
+##                                saveToFile = "sc{}_{}_std".format(sc, 'TC'))
+##        print ('\nSC{} - end', time.asctime(time.localtime(time.time())))
         
     # Cell-based diffs
     scInitial, scEth, scAddEth = carbParams.getScenariosType()
@@ -1325,17 +1344,17 @@ if getCellBasedCarbonStock == 1:
     scAddEthDict = {k: v for k, v in sorted(iteritems(scenariosDict)) if k in scAddEth}
     for (scEth, scEthPath), (scAddEth, scAddEthPath) in zip(
         sorted(iteritems(scEthDict)), sorted(iteritems(scAddEthDict))):
-        socDiffMean = getDiffCellBasedMeanStocks('soc', scEth, scAddEth, \
-                                "sc{}_{}_diff_mean".format(scAddEth, 'SOC'))
-        socDiffStd = getDiffCellBasedStdStocks('soc', scEth, scAddEth, \
-                                csDiffMean_cell, "sc{}_{}_diff_std".format(scAddEth, 'SOC'))
-        bcDiffMean = csgetDiffCellBasedMeanStocks('bc', scEth, scAddEth, \
-                                "sc{}_{}_diff_mean".format(scAddEth, 'BC'))
-        bcDiffStd = getDiffCellBasedStdStocks('bc', scEth, scAddEth, \
-                                csDiffMean_cell, "sc{}_{}_diff_std".format(scAddEth, 'BC'))
+##        socDiffMean = getDiffCellBasedMeanStocks('soc', scEth, scAddEth, \
+##                                "sc{}_{}_diff_mean".format(scAddEth, 'SOC'))
+##        socDiffStd = getDiffCellBasedStdStocks('soc', scEth, scAddEth, \
+##                                socDiffMean, "sc{}_{}_diff_std".format(scAddEth, 'SOC'))
+##        bcDiffMean = csgetDiffCellBasedMeanStocks('bc', scEth, scAddEth, \
+##                                "sc{}_{}_diff_mean".format(scAddEth, 'BC'))
+##        bcDiffStd = getDiffCellBasedStdStocks('bc', scEth, scAddEth, \
+##                                bcDiffMean, "sc{}_{}_diff_std".format(scAddEth, 'BC'))
         tcDiffMean = getDiffCellBasedMeanStocks('tc', scEth, scAddEth, \
                                 "sc{}_{}_diff_mean".format(scAddEth, 'TC'))
         tcDiffStd = getDiffCellBasedStdStocks('tc', scEth, scAddEth, \
-                                csDiffMean_cell, "sc{}_{}_diff_std".format(scAddEth, 'TC'))
+                                tcDiffMean, "sc{}_{}_diff_std".format(scAddEth, 'TC'))
 
 print("Finished at: {}".format(time.asctime(time.localtime(time.time()))))
