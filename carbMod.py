@@ -557,7 +557,7 @@ def getEmissionsDueToEthanol(dictio_diffSOC, dictio_diffBC, dictio_diffTC,
                 mean = np.mean(array_FinalUnit)
                 meanToDict = {'{}mean'.format(stockType): round(mean, 2)}
                 median = np.median(array_FinalUnit)
-                meanToDict = {'{}median'.format(stockType): round(median, 2)}
+                meanToDict.update({'{}median'.format(stockType): round(median, 2)})
                 mins = np.min(array_FinalUnit)
                 meanToDict.update({'{}min'.format(stockType): round(mins, 2)})
                 maxs = np.max(array_FinalUnit)
