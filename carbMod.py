@@ -39,14 +39,14 @@ modelRunType, SOC_comp, BC_comp, LUC_comp = carbParams.configModelComponents()
 # want to run 
 generateRandomValues = 0
 getOverallCarbonStock = 0
-getCellBasedCarbonStock = 0
+getCellBasedCarbonStock = 1
 
 # Defining if you want to save arrays. For overall carbon stocks: used to save the 
 # arrays w/ the sum of CStocks per MCr. If 1, the arrays will be saved regardless 
 # the 'modelRunType' setup. For cell based stocks: the model is set to just save
 # if 'modelRunType' = 'stcAll' (full stochastic), to use in cell-based computations)
 saveArrays4ov_stock = 0
-saveArrays4cb_stock = 0
+saveArrays4cb_stock = 1
 
 # Setup to plot/show/save figures...
 # OBS: For sensitivity analysis, you must run the model four times: For each time,
@@ -56,7 +56,7 @@ saveArrays4cb_stock = 0
 # in each of the runs!
 plotSensAnalysis = 0
 plotBoxplot = 1
-showPlots = 0
+showPlots = 1
 savePlots = 1
 
 # Dictionary corresponding to the path for scenarios with LU maps,
@@ -654,13 +654,13 @@ def getBoxplot(socGHGe, bcGHGe, socGHGe_det, bcGHGe_det): # OBS: I  couldn't
         plt.ylim(ymin, ymax + 5)
         # Drawing bars and plots to use in legend
         plt.bar(1, [0], color=colors[0], label='SOC', alpha=0.80)
-        plt.bar(1, [0], color=colors[1], label='Biomass', alpha=0.80)
+        plt.bar(1, [0], color=colors[1], label='biomass', alpha=0.80)
         #plt.plot([], color='k', linewidth=2, marker="+",
         #         markersize=6, label='Mean - stochastic')
         ax.plot(np.array(range(len(socGHGe)))* 2 + 0.4, socGHGe_det,
                  marker="^", markerfacecolor=colors[0],
                  markeredgecolor='#848484', linestyle='None',
-                 markersize=8, color="w", label="Deterministic", zorder=99)
+                 markersize=8, color="w", label="deterministic results", zorder=99)
         ax.plot(np.array(range(len(bcGHGe)))* 2 - 0.4, bcGHGe_det,
                  marker="^", markerfacecolor=colors[1],
                  markeredgecolor='#848484', linestyle='None',
@@ -672,7 +672,7 @@ def getBoxplot(socGHGe, bcGHGe, socGHGe_det, bcGHGe_det): # OBS: I  couldn't
         ax.xaxis.set_minor_locator(AutoMinorLocator(2))
         plt.xlabel('scenario')
         plt.ylabel('GHG emissions per component\n' +
-                   r'($gram$ $CO_2$-$eq$/$MJ$$_E$$_t$$_O$$_H$)')
+            r'($\rm gram$ $\rm CO_2$-$\rm eq$/$\rm MJ$$\rm _E$$\rm _t$$\rm _O$$\rm _H$)')
         if savePlots == 1:
             plt.savefig(opj(resultsDir, 'plot_boxplot'), dpi=700)
             plt.savefig(opj(resultsDir, 'plot_boxplot.pdf'))
@@ -708,7 +708,7 @@ def getBoxplotThreshold(tcGHGe, tcGHGe_det):
         lower = np.percentile(np.array(tcGHGe), 2.5, axis=1)
         colors = np.where(upper < threshold, 'green', '0')
         colors = np.where(lower > threshold, 'red', colors)
-        colors = np.where(colors == '0', 'orange', colors)
+        colors = np.where(colors == '0', 'darkorange', colors)
         # Box plots
         tcBoxes = ax.boxplot(tcGHGe, positions=np.array(range(len(tcGHGe))) 
                               * 2, sym='', whis='range',#usermedians=tcGHGe_det, 
@@ -731,7 +731,7 @@ def getBoxplotThreshold(tcGHGe, tcGHGe_det):
         #         markersize=6, label='Mean - stochastic')
         ax.plot(np.array(range(len(tcGHGe)))* 2, tcGHGe_det, marker="^", \
                 markerfacecolor='w', markeredgecolor='#848484', linestyle='None', \
-                markersize=8, label="Deterministic", zorder=99)
+                markersize=8, label="deterministic results", zorder=99)
         
         # Adding thresholds in plot 
         for threshold, color, label in zip(threshold, threshold_colors, labels):
@@ -740,12 +740,14 @@ def getBoxplotThreshold(tcGHGe, tcGHGe_det):
                        zorder=100)
 
         handles, labels = ax.get_legend_handles_labels()
-        ax.legend(handles[::-1], labels[::-1], fontsize=10, loc='upper right')
+        ax.legend(handles[::-1], labels[::-1], fontsize=10, loc='upper center')
         #plt.legend(fontsize=7, loc='upper right', frameon=True)
         plt.grid(which="minor", axis='x', color='#848484', linewidth=0.15)
         ax.xaxis.set_minor_locator(AutoMinorLocator(2))
         plt.xlabel('scenario')
-        plt.ylabel('total GHG emissions\n' + r'($gram$ $CO_2$-$eq$/$MJ$$_E$$_t$$_O$$_H$)')
+        ##plt.ylabel('total GHG emissions\n' + r'($gram$ $CO_2$-$eq$/$MJ$$_E$$_t$$_O$$_H$)')
+        plt.ylabel('total GHG emissions\n' + \
+            r'($\rm gram$ $\rm CO_2$-$\rm eq$/$\rm MJ$$\rm _E$$\rm _t$$\rm _O$$\rm _H$)')
         if savePlots == 1:
             plt.savefig(opj(resultsDir, 'plot_boxplot_threshold'), dpi=700)
             plt.savefig(opj(resultsDir, 'plot_boxplot_threshold.pdf'))
@@ -1200,7 +1202,7 @@ def getDiffCellBasedMeanStocks(csType, scEth, scAddEth, saveToFile):
         # the MC range used to run the current LU map
         mcRange_curr = getLUmapMCrange(mapCode, mapMCruns, mcRun_acc)
         mcRun_acc += mapMCruns
-        #print ('runs {}-{}'.format(min(mcRange_curr), max(mcRange_curr)))
+        print ('runs {}-{}'.format(min(mcRange_curr), max(mcRange_curr)))
         #Starting computations
         for sample in mcRange_curr:
             npDataEth = np.load(npzDictEth[sample])
@@ -1323,11 +1325,17 @@ if getCellBasedCarbonStock == 1:
     scAddEthDict = {k: v for k, v in sorted(iteritems(scenariosDict)) if k in scAddEth}
     for (scEth, scEthPath), (scAddEth, scAddEthPath) in zip(
         sorted(iteritems(scEthDict)), sorted(iteritems(scAddEthDict))):
-        socDiffMean = getDiffCellBasedMeanStocks('soc', scEth, scAddEth, "sc{}_{}_diff_mean".format(scAddEth, 'SOC'))
-        socDiffStd = getDiffCellBasedStdStocks('soc', scEth, scAddEth, csDiffMean_cell, "sc{}_{}_diff_std".format(scAddEth, 'SOC'))
-        bcDiffMean = csgetDiffCellBasedMeanStocks('bc', scEth, scAddEth, "sc{}_{}_diff_mean".format(scAddEth, 'BC'))
-        bcDiffStd = getDiffCellBasedStdStocks('bc', scEth, scAddEth, csDiffMean_cell, "sc{}_{}_diff_std".format(scAddEth, 'BC'))
-        tcDiffMean = getDiffCellBasedMeanStocks('tc', scEth, scAddEth, "sc{}_{}_diff_mean".format(scAddEth, 'TC'))
-        tcDiffStd = getDiffCellBasedStdStocks('tc', scEth, scAddEth, csDiffMean_cell, "sc{}_{}_diff_std".format(scAddEth, 'TC'))
+        socDiffMean = getDiffCellBasedMeanStocks('soc', scEth, scAddEth, \
+                                "sc{}_{}_diff_mean".format(scAddEth, 'SOC'))
+        socDiffStd = getDiffCellBasedStdStocks('soc', scEth, scAddEth, \
+                                csDiffMean_cell, "sc{}_{}_diff_std".format(scAddEth, 'SOC'))
+        bcDiffMean = csgetDiffCellBasedMeanStocks('bc', scEth, scAddEth, \
+                                "sc{}_{}_diff_mean".format(scAddEth, 'BC'))
+        bcDiffStd = getDiffCellBasedStdStocks('bc', scEth, scAddEth, \
+                                csDiffMean_cell, "sc{}_{}_diff_std".format(scAddEth, 'BC'))
+        tcDiffMean = getDiffCellBasedMeanStocks('tc', scEth, scAddEth, \
+                                "sc{}_{}_diff_mean".format(scAddEth, 'TC'))
+        tcDiffStd = getDiffCellBasedStdStocks('tc', scEth, scAddEth, \
+                                csDiffMean_cell, "sc{}_{}_diff_std".format(scAddEth, 'TC'))
 
 print("Finished at: {}".format(time.asctime(time.localtime(time.time()))))
