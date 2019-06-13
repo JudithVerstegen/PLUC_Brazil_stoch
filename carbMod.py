@@ -40,7 +40,7 @@ modelRunType, SOC_comp, BC_comp, LUC_comp = carbParams.configModelComponents()
 # want to run 
 generateRandomValues = 0
 getOverallCarbonStock = 0
-getCellBasedCarbonStock = 0
+getCellBasedCarbonStock = 1
 
 # Defining if you want to save arrays. For overall carbon stocks: used to save the 
 # arrays w/ the sum of CStocks per MCr. If 1, the arrays will be saved regardless 
@@ -56,9 +56,9 @@ saveArrays4cb_stock = 0
 # the sensitivity analysis is only possible if you set saveArrays4ov_stock to 1 
 # in each of the runs!
 plotSensAnalysis = 0
-plotBoxplot = 1
-showPlots = 1
-savePlots = 1
+plotBoxplot = 0
+showPlots = 0
+savePlots = 0
 
 # Dictionary corresponding to the path for scenarios with LU maps,
 scenariosDict = carbParams.getScenariosPaths(opj(os.path.join('PLUC', \
@@ -1282,6 +1282,7 @@ def getDiffCellBasedStdStocks(csType, scEth, scAddEth, csDiffMean_cell, saveToFi
         #print ('runs {}-{}'.format(min(mcRange_curr), max(mcRange_curr)))
         #Starting computations
         for sample in mcRange_curr:
+            sample = int(sample)
             npDataEth = np.load(npzDictEth[sample])
             npDataAddEth = np.load(npzDictAddEth[sample])
             if csType == 'soc' or csType == 'bc':
@@ -1296,8 +1297,9 @@ def getDiffCellBasedStdStocks(csType, scEth, scAddEth, csDiffMean_cell, saveToFi
                 csAddEth = socAddEth + bcAddEth            
             csDiff = csAddEth - csEth
             # mask to remove zero values when computing squares
-            maskDiff = (np.ma.masked_values(csDiff, 0))
-            sqDiff = (maskDiff - csDiffMean_cell) ** 2
+            ##maskDiff = (np.ma.masked_values(csDiff, 0))
+            ##sqDiff = (maskDiff - csDiffMean_cell) ** 2
+            sqDiff = (csDiff - csDiffMean_cell) ** 2
             cs_sqAccum = sqDiff + cs_sqAccum
             print ('\tDiff std of {} ({} vs {}) - {}, {}, files {} & {} ...'.format(
                 csType, scAddEth, scEth, sample, LUmapPath, 
