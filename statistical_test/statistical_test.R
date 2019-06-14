@@ -36,11 +36,11 @@
   
   #############################################################
   # MAIN
-  setwd("/home/rber/Work/BR_Stoch_PLUC_emissions/statistical_test")
+  setwd("D:/PLUC_Renan/model_merged/PLUC_Brazil_stoch/statistical_test")
   k <- 6 # 6scenarios, 6 groups to compare
   n <- 10000 # cheating
   N <- k*n
-  indicator <- "TC" # select 'TC', 'SOC' or 'BC' to change the input files 
+  indicator <- "BC" # select 'TC', 'SOC' or 'BC' to change the input files 
   
   # extra column with combi scen and year for letters
   tot <- data.frame(scenario=rep("", N), datas=rep(as.double(NA),N), combi=rep("", N), stringsAsFactors = FALSE)
@@ -90,6 +90,10 @@
   pk
   pt <- pk$p.value
   #pt <- t(pt)
+
+  # try Welch's anova to account for heteroscedasticity 
+  welch <- oneway.test(datas ~ as.factor(combi), data=tot, na.action=na.omit, 
+		var.equal=FALSE)
 
   # try Friedman instead of Kruskal-Wallis
   # does not work because the combination of 'combi' and 'scen' 

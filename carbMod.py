@@ -40,14 +40,14 @@ modelRunType, SOC_comp, BC_comp, LUC_comp = carbParams.configModelComponents()
 # want to run 
 generateRandomValues = 0
 getOverallCarbonStock = 0
-getCellBasedCarbonStock = 1
+getCellBasedCarbonStock = 0
 
 # Defining if you want to save arrays. For overall carbon stocks: used to save the 
 # arrays w/ the sum of CStocks per MCr. If 1, the arrays will be saved regardless 
 # the 'modelRunType' setup. For cell based stocks: the model is set to just save
 # if 'modelRunType' = 'stcAll' (full stochastic), to use in cell-based computations)
 saveArrays4ov_stock = 0
-saveArrays4cb_stock = 0
+saveArrays4cb_stock = 1
 
 # Setup to plot/show/save figures...
 # OBS: For sensitivity analysis, you must run the model four times: For each time,
@@ -55,9 +55,9 @@ saveArrays4cb_stock = 0
 # (see carbParams.configModelComponents() for better understanding). IMPORTANT: 
 # the sensitivity analysis is only possible if you set saveArrays4ov_stock to 1 
 # in each of the runs!
-plotSensAnalysis = 0
-plotBoxplot = 0
-showPlots = 0
+plotSensAnalysis = 1
+plotBoxplot = 1
+showPlots = 1
 savePlots = 0
 
 # Dictionary corresponding to the path for scenarios with LU maps,
@@ -818,10 +818,7 @@ def getSensitivityAnalysis():
         colors = ['#5ab4ac', '#d8b365', '#f6e8c3', '#610B0B']
         bars = np.arange(6)
         barWidth = 0.75
-        labels = ['Reference\nscenario', 'High\nproductivity.', 
-                  r'2$^n$$^d$ generation' + '\nsugar cane',
-                  r'2$^n$$^d$ generation' + '\neucalyptus',
-                  'Conservation\npolicies', 'All\nmeasures']
+        labels = carbParams.getScenariosNames()
         # Plotting bars
         barBC = plt.bar(bars, varFract.stcBC, color=colors[0], width=barWidth)
         barSOC = plt.bar(bars, varFract.stcSOC,
@@ -833,13 +830,12 @@ def getSensitivityAnalysis():
         # Plot setup
         plt.xticks(bars, labels, fontsize=10)
         plt.yticks(np.arange(0, 101, step=50), fontsize=9.5)
-        plt.ylabel("Component contribution in the variance of GHGE from ethanol" +
-                   "production/\nTotal variance of GHGE from ethanol production (%)*",
-                   fontsize=9)
+        plt.xlabel('scenario')
+        plt.ylabel("Contribution of component to variance in GHG emissions (%)")# ,fontsize=9)
         plt.legend((barBC[0], barSOC[0], barLUC[0], barOther[0]), 
-                   ('Biomass', 'SOC', 'LUC', 'Model interactions'), 
-                   bbox_to_anchor=(0.78, -0.12), fontsize=10, ncol=4)
-        plt.grid(which="major", axis="y", color='0.7', linewidth=0.3)
+                   ('BCS', 'SOC', 'LUC', 'Model interactions'), 
+                   bbox_to_anchor=(0.82, -0.12), fontsize=12, ncol=4)
+        ##plt.grid(which="major", axis="y", color='0.7', linewidth=0.3)
         plt.subplots_adjust(bottom=0.2)
         if savePlots == 1:
             plt.savefig(opj(resultsDir, 'plot_sensAnalysis'), dpi=700)
