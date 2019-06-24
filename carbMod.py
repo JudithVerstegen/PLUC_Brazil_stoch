@@ -58,7 +58,7 @@ saveArrays4cb_stock = 1
 plotSensAnalysis = 1
 plotBoxplot = 1
 showPlots = 1
-savePlots = 0
+savePlots = 1
 
 # Dictionary corresponding to the path for scenarios with LU maps,
 scenariosDict = carbParams.getScenariosPaths(opj(os.path.join('PLUC', \
@@ -704,7 +704,8 @@ def getBoxplotThreshold(tcGHGe, tcGHGe_det):
         SC_emissions = 20 # gram CO2-eq/MJ
         # Assumed default GHG emissions from gasoline 
         GSLN_emissions = 94 # gram CO2-eq/MJ
-        threshold = (GSLN_emissions*(1-percent))
+        threshold = (GSLN_emissions*(1-percent))# - 20 #if subtracting LCA emissions
+        print(threshold)
         # Create figure
         fig, ax = plt.subplots(figsize=(8, 5))
         # New: color based on above/below threshold
@@ -811,6 +812,7 @@ def getSensitivityAnalysis():
         # Getting the total contribution of all components in overall variance
         varFract['tot'] = varFract['stcBC'] + \
             varFract['stcSOC'] + varFract['stcLUC']
+        print(varFract)
         # Getting the model interactions contribution in overall variance
         varFract['diff'] = varFract['stcAll'] - varFract['tot']
         # Plotting resultsplot_sensAnalysis
