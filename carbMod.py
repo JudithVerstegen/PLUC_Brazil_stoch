@@ -55,7 +55,7 @@ saveArrays4cb_stock = 1
 # (see carbParams.configModelComponents() for better understanding). IMPORTANT: 
 # the sensitivity analysis is only possible if you set saveArrays4ov_stock to 1 
 # in each of the runs!
-plotSensAnalysis = 1
+plotSensAnalysis = 0
 plotBoxplot = 1
 showPlots = 1
 savePlots = 1
@@ -609,8 +609,7 @@ def setupBoxplot(boxplot, color):
     else:
         for patch, col in zip(boxplot['boxes'], color):
             patch.set_facecolor(col)
-        plt.setp(boxplot['boxes'], edgecolor='#585858', linewidth=0.4, \
-                 alpha=0.8)
+        plt.setp(boxplot['boxes'], edgecolor='#585858', linewidth=0.4)#, alpha=0.8)
     plt.setp(boxplot['whiskers'], color='#848484',
              linewidth=0.6, linestyle="--")
     plt.setp(boxplot['caps'], color='#848484', linewidth=1)
@@ -694,55 +693,80 @@ def getBoxplotThreshold(tcGHGe, tcGHGe_det):
         tcGHGe = list(itervalues(tcGHGe))
         tcGHGe_det = [v[0] for v in list(itervalues(tcGHGe_det))]
 
-        
-        # The five thresholds based on (EU) 2018/2001 (as percentage)
-        percent = np.array([0.65])#[0.5, 0.6, 0.65, 0.7, 0.8]
-        threshold_colors = ['k']#['#c7e9b4', '#7fcdbb', '#41b6c4', '#1d91c0', '#0c2c84']        
-        labels = ['threshold REDII ']# + (str(int(i * 100)) + '%') for i in percent]#['50 % threshold', '60 % threshold', 
-                  #'65 % threshold', '70 % threshold', '80 % threshold']
         #  Assumed Life cycle GHG emissions of eth. prod. from sugar cane in BRA
         SC_emissions = 20 # gram CO2-eq/MJ
         # Assumed default GHG emissions from gasoline 
         GSLN_emissions = 94 # gram CO2-eq/MJ
-        threshold = (GSLN_emissions*(1-percent))# - 20 #if subtracting LCA emissions
-        print(threshold)
+
         # Create figure
         fig, ax = plt.subplots(figsize=(8, 5))
+        
+        # RED
+        percentRED = np.array([0.65])
+        threshold_colors = ['k']#['#c7e9b4', '#7fcdbb', '#41b6c4', '#1d91c0', '#0c2c84']        
+        labelsRED = ['threshold REDII ']# + (str(int(i * 100)) + '%') for i in percent]#['50 % threshold', '60 % threshold', 
+                  #'65 % threshold', '70 % threshold', '80 % threshold']
+        thresholdRED = (GSLN_emissions*(1-percentRED))# - 20 #if subtracting LCA emissions
+        print(thresholdRED)
         # New: color based on above/below threshold
         ##colors = carbParams.figureColors()
         upper = np.percentile(np.array(tcGHGe), 97.5, axis=1)
         lower = np.percentile(np.array(tcGHGe), 2.5, axis=1)
-        colors = np.where(upper < threshold, 'green', '0')
-        colors = np.where(lower > threshold, 'red', colors)
+        colors = np.where(upper < thresholdRED, 'green', '0')
+        colors = np.where(lower > thresholdRED, 'red', colors)
         colors = np.where(colors == '0', 'darkorange', colors)
         # Box plots
         tcBoxes = ax.boxplot(tcGHGe, positions=np.array(range(len(tcGHGe))) 
                               * 2, sym='', whis='range',#usermedians=tcGHGe_det, 
                               meanline=True, showmeans=False, patch_artist=True, 
                               widths=0.6)
-
-        # Customizing boxplots, using previously defined colors
         setupBoxplot(tcBoxes, colors)
-        ##ymin = int(np.max(tcGHGe)) * -1
+
+        # RFS
+        percentRFS = np.array([0.50])
+        threshold_colors = ['k']#['#c7e9b4', '#7fcdbb', '#41b6c4', '#1d91c0', '#0c2c84']        
+        labelsRFS = ['threshold RFS ']# + (str(int(i * 100)) + '%') for i in percent]#['50 % threshold', '60 % threshold', 
+                  #'65 % threshold', '70 % threshold', '80 % threshold']
+        thresholdRFS = (GSLN_emissions*(1-percentRFS))# - 20 #if subtracting LCA emissions
+        print(thresholdRFS)
+        # New: color based on above/below threshold
+        ##colors = carbParams.figureColors()
+        upper = np.percentile(np.array(tcGHGe), 97.5, axis=1)
+        lower = np.percentile(np.array(tcGHGe), 2.5, axis=1)
+        colors = np.where(upper < thresholdRFS, 'green', '0')
+        colors = np.where(lower > thresholdRFS, 'red', colors)
+        colors = np.where(colors == '0', 'darkorange', colors)
+        # Box plots
+        tcBoxes = ax.boxplot(tcGHGe, positions=np.array(range(len(tcGHGe))) 
+                              * 2 - 0.15, sym='', whis=0,#usermedians=tcGHGe_det, 
+                              meanline=True, showmeans=False, patch_artist=True, 
+                              widths=0.3)
+        setupBoxplot(tcBoxes, colors)
+
+        # Customizing boxplots
         ymin = math.floor(np.min(tcGHGe)/10)*10
-        ymax = int(np.max(tcGHGe))
+        ymax = int(np.max(tcGHGe)) + 20
         plt.yticks(np.arange(ymin, ymax + 1, step=10))
         plt.xticks(np.arange(0, len(tcGHGe) * 2, 2), 
                    carbParams.getScenariosNames(), fontsize=8.5)
         plt.xlim(-1, len(tcGHGe) * 2 - 1)
-        plt.ylim(ymin, ymax + 5)
-        # Drawing bars and plots to use in legend
-        #plt.bar(1, [0], color=colors[-1], label='', alpha=0.80)
-        #ax.plot([], color='k', linewidth=2, marker="+",
-        #         markersize=6, label='Mean - stochastic')
+        plt.ylim(ymin, ymax)
+        
+        # Deterministic 
         ax.plot(np.array(range(len(tcGHGe)))* 2, tcGHGe_det, marker="^", \
                 markerfacecolor='w', markeredgecolor='#848484', linestyle='None', \
                 markersize=8, label="deterministic results", zorder=99)
         
         # Adding thresholds in plot 
-        for threshold, color, label in zip(threshold, threshold_colors, labels):
+        for threshold, color, label in zip(thresholdRED, threshold_colors, \
+                                           labelsRED):
             ax.axhline(y=threshold, linewidth = 0.9, 
                         linestyle = '--', color = color, label = label,
+                       zorder=100)
+        for threshold, color, label in zip(thresholdRFS, threshold_colors, \
+                                           labelsRFS):
+            ax.axhline(y=threshold, linewidth = 0.9, 
+                        linestyle = '-.', color = color, label = label,
                        zorder=100)
 
         handles, labels = ax.get_legend_handles_labels()
@@ -757,8 +781,9 @@ def getBoxplotThreshold(tcGHGe, tcGHGe_det):
         labels[0:0] = ['certainly above']
         ##handles[0:0] = [Patch(facecolor='None', edgecolor='None')]
         ##labels[0:0] = ['Position relative to threshold:']
-        ax.legend(handles, labels, fontsize=10, loc='upper center', \
-                  title='Position relative to threshold:')
+        l = ax.legend(handles, labels, fontsize=10, loc='upper right', ncol=2,\
+            title='Position relative to threshold:\n(RFS left-hand color, REDII right-hand color)')
+        l.get_title().set_position((-40, 0))
         #plt.legend(fontsize=7, loc='upper right', frameon=True)
         plt.grid(which="minor", axis='x', color='#848484', linewidth=0.15)
         ax.xaxis.set_minor_locator(AutoMinorLocator(2))
