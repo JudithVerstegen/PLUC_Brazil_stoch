@@ -782,9 +782,8 @@ def getBoxplotThreshold(tcGHGe, tcGHGe_det):
         ##handles[0:0] = [Patch(facecolor='None', edgecolor='None')]
         ##labels[0:0] = ['Position relative to threshold:']
         l = ax.legend(handles, labels, fontsize=10, loc='upper right', ncol=2,\
-            title='Position relative to threshold:\n(RFS left-hand color, REDII right-hand color)')
-        l.get_title().set_position((-40, 0))
-        #plt.legend(fontsize=7, loc='upper right', frameon=True)
+            title='Position relative to threshold:\n(RFS left-hand color, REDII right-hand color)                       ')
+        #l.get_title().set_position((-40, 0))
         plt.grid(which="minor", axis='x', color='#848484', linewidth=0.15)
         ax.xaxis.set_minor_locator(AutoMinorLocator(2))
         plt.xlabel('scenario')
