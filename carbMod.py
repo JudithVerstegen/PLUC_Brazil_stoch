@@ -56,7 +56,7 @@ saveArrays4cb_stock = 1
 # the sensitivity analysis is only possible if you set saveArrays4ov_stock to 1 
 # in each of the runs!
 plotSensAnalysis = 1
-plotBoxplot = 1
+plotBoxplot = 0
 showPlots = 1
 savePlots = 1
 
@@ -840,7 +840,7 @@ def getSensitivityAnalysis():
         # Getting the model interactions contribution in overall variance
         varFract['diff'] = varFract['stcAll'] - varFract['tot']
         # Plotting resultsplot_sensAnalysis
-        fig, ax = plt.subplots(figsize=(10, 6))
+        fig, ax = plt.subplots(figsize=(7, 6))
         colors = ['#5ab4ac', '#d8b365', '#f6e8c3', '#610B0B']
         bars = np.arange(6)
         barWidth = 0.75
@@ -854,17 +854,18 @@ def getSensitivityAnalysis():
         barOther = plt.bar(bars, varFract['diff'], bottom=varFract['tot'],
                            color=colors[3], width=barWidth)
         # Plot setup
-        plt.xticks(bars, labels, fontsize=10)
-        plt.yticks(np.arange(0, 101, step=50), fontsize=9.5)
-        plt.xlabel('scenario')
-        plt.ylabel("Contribution of component to variance in GHG emissions (%)")# ,fontsize=9)
+        plt.xticks(bars, labels, fontsize=9.5)
+        plt.yticks(np.arange(0, 101, step=25), fontsize=9.5)
+        plt.xlabel('scenario', fontsize=12)
+        plt.ylabel("contribution to variance in GHG emissions (%)", fontsize=12)
         plt.legend((barBC[0], barSOC[0], barLUC[0], barOther[0]), 
                    ('BCS', 'SOC', 'LUC', 'Model interactions'), 
-                   bbox_to_anchor=(0.82, -0.12), fontsize=12, ncol=4)
+                   bbox_to_anchor=(1, -0.12), fontsize=12, ncol=4)
         ##plt.grid(which="major", axis="y", color='0.7', linewidth=0.3)
         plt.subplots_adjust(bottom=0.2)
         if savePlots == 1:
             plt.savefig(opj(resultsDir, 'plot_sensAnalysis'), dpi=700)
+            plt.savefig(opj(resultsDir, 'plot_sensAnalysis.pdf'))
         if showPlots == 1:
             plt.show()
 
