@@ -55,7 +55,7 @@ saveArrays4cb_stock = 1
 # (see carbParams.configModelComponents() for better understanding). IMPORTANT: 
 # the sensitivity analysis is only possible if you set saveArrays4ov_stock to 1 
 # in each of the runs!
-plotSensAnalysis = 0
+plotSensAnalysis = 1
 plotBoxplot = 1
 showPlots = 1
 savePlots = 1
@@ -710,8 +710,8 @@ def getBoxplotThreshold(tcGHGe, tcGHGe_det):
         print(thresholdRED)
         # New: color based on above/below threshold
         ##colors = carbParams.figureColors()
-        upper = np.percentile(np.array(tcGHGe), 97.5, axis=1)
-        lower = np.percentile(np.array(tcGHGe), 2.5, axis=1)
+        upper = np.percentile(np.array(tcGHGe), 95, axis=1)
+        lower = np.percentile(np.array(tcGHGe), 5, axis=1)
         colors = np.where(upper < thresholdRED, 'green', '0')
         colors = np.where(lower > thresholdRED, 'red', colors)
         colors = np.where(colors == '0', 'darkorange', colors)
@@ -731,8 +731,8 @@ def getBoxplotThreshold(tcGHGe, tcGHGe_det):
         print(thresholdRFS)
         # New: color based on above/below threshold
         ##colors = carbParams.figureColors()
-        upper = np.percentile(np.array(tcGHGe), 97.5, axis=1)
-        lower = np.percentile(np.array(tcGHGe), 2.5, axis=1)
+        upper = np.percentile(np.array(tcGHGe), 95, axis=1)
+        lower = np.percentile(np.array(tcGHGe), 5, axis=1)
         colors = np.where(upper < thresholdRFS, 'green', '0')
         colors = np.where(lower > thresholdRFS, 'red', colors)
         colors = np.where(colors == '0', 'darkorange', colors)

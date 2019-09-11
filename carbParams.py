@@ -179,7 +179,7 @@ def figureColors():
 
 def getScenariosNames():
     """Return list of scenarios  with name."""
-    scenariosNames = ['BAU', 'High prod.', 'SC 2nd gen.',
+    scenariosNames = ['Reference', 'High prod.', 'SC 2nd gen.',
                       'EU 2nd gen.', 'Strict cons.', 'All comb.']
     return scenariosNames
 
