@@ -48,34 +48,34 @@ setwd("D:/PLUC_Renan/model_merged/PLUC_Brazil_stoch/statistical_test")
 k <- 6 # 6scenarios, 6 groups to compare
 n <- 10000 # cheating
 N <- k*n
-indicator <- "BC" # select 'TC', 'SOC' or 'BC' to change the input files 
+indicator <- "TC" # select 'TC', 'SOC' or 'BC' to change the input files 
 
 # extra column with combi scen and year for letters
 tot <- data.frame(scenario=rep("", N), datas=rep(as.double(NA),N), combi=rep("", N), stringsAsFactors = FALSE)
 ghge <- get_data(indicator)
 
-tot$scenario[1:n] <- "1 Ref"
+tot$scenario[1:n] <- "1_Ref"
 tot$combi[1:n] <- "1_Ref" #as.character(scenarios_s_1990$combi[1:n])
 tot$datas[1:n] <- ghge$data[1:n]
 
-tot$scenario[(n+1):(2*n)] <- "2 HP"
-tot$combi[(n+1):(2*n)] <- "2_HP" #as.character(scenarios_s_2000$combi[1:n])
+tot$scenario[(n+1):(2*n)] <- "2_HighProd"
+tot$combi[(n+1):(2*n)] <- "2_HighProd" #as.character(scenarios_s_2000$combi[1:n])
 tot$datas[(n+1):(2*n)] <- ghge$data[(n+1):(n*2)]
 
-tot$scenario[(2*n+1):(3*n)] <- "3 2ndSc"
-tot$combi[(2*n+1):(3*n)] <- "3_2ndSc" #as.character(scenarios_s_2009$combi[1:n])
+tot$scenario[(2*n+1):(3*n)] <- "3_SC2nd"
+tot$combi[(2*n+1):(3*n)] <- "3_SC2nd" #as.character(scenarios_s_2009$combi[1:n])
 tot$datas[(2*n+1):(3*n)] <- ghge$data[(2*n+1):(n*3)]
  
-tot$scenario[(3*n+1):(n*4)] = "4 2ndEu"
-tot$combi[(3*n+1):(n*4)] = "4_2ndEu"
+tot$scenario[(3*n+1):(n*4)] = "4_EU2nd"
+tot$combi[(3*n+1):(n*4)] = "4_EU2nd"
 tot$datas[(3*n+1):(n*4)] <- ghge$data[(3*n+1):(n*4)]
 
-tot$scenario[(4*n+1):(n*5)] = "5 CP"
-tot$combi[(4*n+1):(n*5)] = "5_CP"
+tot$scenario[(4*n+1):(n*5)] = "5_StrictCons"
+tot$combi[(4*n+1):(n*5)] = "5_StrictCons"
 tot$datas[(4*n+1):(n*5)] <- ghge$data[(4*n+1):(n*5)]
 
-tot$scenario[(5*n+1) :(n*6)] = "6 All"
-tot$combi[(5*n+1):(n*6)] = "6_All"
+tot$scenario[(5*n+1) :(n*6)] = "6_AllComb"
+tot$combi[(5*n+1):(n*6)] = "6_AllComb"
 tot$datas[(5*n+1):(n*6)] <- ghge$data[(5*n+1):(n*6)]
 
 # plotting the data
@@ -101,26 +101,36 @@ pt <- pk$p.value
 #pt <- t(pt)
 
 # try Welch's anova to account for heteroscedasticity 
-welch <- oneway.test(datas ~ as.factor(combi), data=tot, na.action=na.omit, 
-	ar.equal=FALSE)
+# does not work
+welch <- oneway.test(datas ~ as.factor(combi), data=tot, na.action=na.omit)
+welch
 
 
-
-
-# try Games-Howell test
+# USED FOR THE PAPER
+# simple one-way ANOVA with Games-Howell post-hoc test
 # https://rpubs.com/aaronsc32/games-howell-test
 one.way <- oneway(as.factor(tot$combi), y = tot$datas, posthoc = 'games-howell', levene = T,
-			digits=5, corrections=T)
+			digits=10, pvalueDigits=10, corrections=F, conf.level=0.95)
 one.way
-write.table(one.way$output, file = paste("pvalues_",indicator,".csv", sep=""), append = FALSE, quote = TRUE, sep = " ",
+write.table(one.way$output, file = paste("pvalues_",indicator,".csv", sep=""), 
+		append = FALSE, quote = TRUE, sep = " ",
             eol = "\n", na = "NA", dec = ".", row.names = TRUE,
             col.names = TRUE) 
+
+
+
+# try it again without reference scenario
+# https://rpubs.com/aaronsc32/games-howell-test
+x <- tot$combi[(n+1):(6*n)]
+y <- tot$datas[(n+1):(6*n)]
+one.way <- oneway(as.factor(x), y = y, posthoc = 'games-howell', levene = T, digits=6, corrections=T)
+one.way
 
 # try it again on selection
 selection <- tot %>% group_by(combi) %>% sample_n(size = 100)
 print(summary(selection))
 one.way <- oneway(as.factor(selection$combi), y = selection$datas, posthoc = 'games-howell', levene = T,
-			digits=5, corrections=T)
+			digits=10, pvalueDigits=10, corrections=T)
 one.way
 
 
