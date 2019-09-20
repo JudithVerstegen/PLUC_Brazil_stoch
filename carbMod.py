@@ -56,7 +56,7 @@ saveArrays4cb_stock = 1
 # the sensitivity analysis is only possible if you set saveArrays4ov_stock to 1 
 # in each of the runs!
 plotSensAnalysis = 1
-plotBoxplot = 0
+plotBoxplot = 1
 showPlots = 1
 savePlots = 1
 
@@ -689,14 +689,17 @@ def getBoxplotThreshold(tcGHGe, tcGHGe_det):
     the five thresholds related to Directive EU 2018/2001 """
     if plotBoxplot == 1:
         #plt.show()
-        # Setting input data for boxplots (both stoch and det results  
-        tcGHGe = list(itervalues(tcGHGe))
-        tcGHGe_det = [v[0] for v in list(itervalues(tcGHGe_det))]
-
+        
         #  Assumed Life cycle GHG emissions of eth. prod. from sugar cane in BRA
-        SC_emissions = 20 # gram CO2-eq/MJ
+        SC_emissions = 20.0 # gram CO2-eq/MJ
         # Assumed default GHG emissions from gasoline 
         GSLN_emissions = 94 # gram CO2-eq/MJ
+        
+        # Setting input data for boxplots (both stoch and det results
+        tcGHGe = list(itervalues(tcGHGe))
+        tcGHGe = list(np.add(np.array(tcGHGe), SC_emissions))
+        tcGHGe_det = [v[0] for v in list(itervalues(tcGHGe_det))]
+        tcGHGe_det = list(np.add(np.array(tcGHGe_det), SC_emissions))
 
         # Create figure
         fig, ax = plt.subplots(figsize=(8, 5))
@@ -706,7 +709,7 @@ def getBoxplotThreshold(tcGHGe, tcGHGe_det):
         threshold_colors = ['k']#['#c7e9b4', '#7fcdbb', '#41b6c4', '#1d91c0', '#0c2c84']        
         labelsRED = ['threshold REDII ']# + (str(int(i * 100)) + '%') for i in percent]#['50 % threshold', '60 % threshold', 
                   #'65 % threshold', '70 % threshold', '80 % threshold']
-        thresholdRED = (GSLN_emissions*(1-percentRED))# - 20 #if subtracting LCA emissions
+        thresholdRED = (GSLN_emissions*(1-percentRED))# - SC_emissions #if subtracting LCA emissions
         print(thresholdRED)
         # New: color based on above/below threshold
         ##colors = carbParams.figureColors()
@@ -727,7 +730,7 @@ def getBoxplotThreshold(tcGHGe, tcGHGe_det):
         threshold_colors = ['k']#['#c7e9b4', '#7fcdbb', '#41b6c4', '#1d91c0', '#0c2c84']        
         labelsRFS = ['threshold RFS ']# + (str(int(i * 100)) + '%') for i in percent]#['50 % threshold', '60 % threshold', 
                   #'65 % threshold', '70 % threshold', '80 % threshold']
-        thresholdRFS = (GSLN_emissions*(1-percentRFS))# - 20 #if subtracting LCA emissions
+        thresholdRFS = (GSLN_emissions*(1-percentRFS))# - SC_emissions #if subtracting LCA emissions
         print(thresholdRFS)
         # New: color based on above/below threshold
         ##colors = carbParams.figureColors()
@@ -836,7 +839,9 @@ def getSensitivityAnalysis():
         # Getting the total contribution of all components in overall variance
         varFract['tot'] = varFract['stcBC'] + \
             varFract['stcSOC'] + varFract['stcLUC']
-        print(varFract)
+        print(varFract.stcLUC)
+        print(varFract.stcBC)
+        print(varFract.stcSOC)
         # Getting the model interactions contribution in overall variance
         varFract['diff'] = varFract['stcAll'] - varFract['tot']
         # Plotting resultsplot_sensAnalysis
